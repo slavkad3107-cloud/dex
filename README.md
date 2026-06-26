@@ -148,6 +148,3 @@ Copy `eval-set.json` to `~/.gavel/eval-set.json` before running.
 ## License
 
 MIT — see [LICENSE](./LICENSE).
-
-Original work © 2026 junkim100 ([junkim100/gavel](https://github.com/junkim100/gavel)).
-Modifications (multi-provider, debate pipeline, eval harness, auto-router) © 2026 sdushnikovich-sketch.

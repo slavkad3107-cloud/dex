@@ -1,9 +1,5 @@
 MIT License
 
-Original work:
-Copyright (c) 2026 junkim100 (https://github.com/junkim100/gavel)
-
-Modifications (multi-provider support, debate pipeline, eval harness, auto-router):
 Copyright (c) 2026 sdushnikovich-sketch
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
