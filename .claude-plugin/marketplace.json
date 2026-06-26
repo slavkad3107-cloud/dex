@@ -1,0 +1,12 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dex",
+  "owner": { "name": "sdushnikovich-sketch" },
+  "plugins": [
+    {
+      "name": "dex",
+      "source": ".",
+      "description": "dex — Claude-as-judge ensemble (auto router · debate · external verification · machine eval)."
+    }
+  ]
+}

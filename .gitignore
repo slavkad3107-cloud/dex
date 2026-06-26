@@ -1,0 +1,25 @@
+# API keys / secrets
+.env
+.env.*
+secrets.*
+settings.json
+
+# Per-machine gavel config (has local paths + panel choices)
+.gavel.json
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Temp
+*.tmp
+*.bak
