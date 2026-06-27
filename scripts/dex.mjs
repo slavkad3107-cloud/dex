@@ -153,7 +153,7 @@ const PROVIDERS = {
     async run({ prompt, model, cwd, timeoutMs, env }) {
       const runEnv = { ...env };
       if (model) runEnv.DEX_DEEPSEEK_MODEL = model;
-      const r = await runCommand(process.execPath, [path.join(SCRIPTS_DIR, "deepseek-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
+      const r = await runCommand(process.execPath.includes(" ") ? `"${process.execPath}"` : process.execPath, [path.join(SCRIPTS_DIR, "deepseek-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
       if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
       if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
       if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `deepseek exited with code ${r.code}` };
@@ -179,7 +179,7 @@ const PROVIDERS = {
     async run({ prompt, model, cwd, timeoutMs, env }) {
       const runEnv = { ...env };
       if (model) runEnv.DEX_MISTRAL_MODEL = model;
-      const r = await runCommand(process.execPath, [path.join(SCRIPTS_DIR, "mistral-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
+      const r = await runCommand(process.execPath.includes(" ") ? `"${process.execPath}"` : process.execPath, [path.join(SCRIPTS_DIR, "mistral-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
       if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
       if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
       if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `mistral exited with code ${r.code}` };
@@ -205,7 +205,7 @@ const PROVIDERS = {
     async run({ prompt, model, cwd, timeoutMs, env }) {
       const runEnv = { ...env };
       if (model) runEnv.DEX_COHERE_MODEL = model;
-      const r = await runCommand(process.execPath, [path.join(SCRIPTS_DIR, "cohere-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
+      const r = await runCommand(process.execPath.includes(" ") ? `"${process.execPath}"` : process.execPath, [path.join(SCRIPTS_DIR, "cohere-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
       if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
       if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
       if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `cohere exited with code ${r.code}` };
@@ -292,7 +292,7 @@ function makeOpenAiProvider({ bin, base, defaultModel, modelEnv, keyEnv, signupU
         "--provider", bin, "--base", base,
         "--key-env", keyEnv, "--model-env", modelEnv, "--default-model", defaultModel,
       ];
-      const r = await runCommand(process.execPath, scriptArgs, { cwd, timeoutMs, input: prompt, env: runEnv });
+      const r = await runCommand(process.execPath.includes(" ") ? `"${process.execPath}"` : process.execPath, scriptArgs, { cwd, timeoutMs, input: prompt, env: runEnv });
       if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
       if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
       if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `${bin} exited with code ${r.code}` };
