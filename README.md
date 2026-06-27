@@ -2,7 +2,7 @@
 
 **Claude-as-judge ensemble for accurate answers** — a Claude Code plugin.
 
-Claude answers first, consults a panel of free/local advisor models, escalates by difficulty (`/dex:auto`), runs a multi-round **debate** with anonymous critique and external verification, and **machine-evaluates itself** (`/dex:eval`).
+Claude answers first, consults a panel of free/local advisor models, runs a full multi-round **debate** with anonymous critique and external verification, and **machine-evaluates itself** (`/dex:eval`).
 
 
 
@@ -17,9 +17,9 @@ Claude answers first, consults a panel of free/local advisor models, escalates b
 | Claude alone | 18/18 | 5/8 | Baseline |
 | `ask cerebras` | 16/18 | 6–7/8 | Single strong voice |
 | `fuse` (naive ensemble) | 14/18 | 3/8 | **Worst** — weak voices outvote the strong one |
-| `auto` / `debate` | 18/18 | 8/8 | Judge + verification wins |
+| `debate` | 18/18 | 8/8 | Judge + verification wins |
 
-**`/dex:auto` is the recommended default** — same accuracy as debate, much lower average cost.
+**`/dex` = `/dex:debate` always** — full pipeline, no shortcuts.
 **`/dex:fuse` (standalone) is disabled** — measured worst in both regimes.
 
 ---
@@ -31,7 +31,7 @@ Claude answers first, consults a panel of free/local advisor models, escalates b
 /plugin install dex@dex
 ```
 
-Then restart Claude Code. Commands become `/dex:auto`, `/dex:debate`, `/dex:ask`, `/dex:eval`, `/dex:setup`, `/dex:config`.
+Then restart Claude Code. Commands become `/dex` (= debate), `/dex:debate`, `/dex:ask`, `/dex:eval`, `/dex:setup`, `/dex:config`.
 
 ---
 
@@ -63,7 +63,7 @@ For local Ollama models: install [ollama](https://ollama.com), pull a model (`ol
 
 | Command | What it does |
 |---|---|
-| `/dex:auto <task>` | **Recommended default.** Cheap probe first → escalate to panel → debate only if genuinely hard. |
+| `/dex <task>` | **Default.** Full multi-round debate — identical to `/dex:debate`. |
 | `/dex:debate <task>` | Full multi-round debate: blind draft → structured critique → claim verification → synthesis audit. |
 | `/dex:ask <provider\|all> <task>` | Query one provider or the full panel (no synthesis — raw answers side by side). |
 | `/dex:eval [fuse\|ask <provider>]` | Run the machine-scored eval harness and print a stratified scorecard. |
@@ -95,13 +95,7 @@ A money guard (`expectFree`) refuses any non-`:free` OpenRouter model unless `DE
 
 ## How it works
 
-### `/dex:auto` — cost-aware router
-
-1. **Stage 1 (cheap):** Your draft + one strong voice (cerebras, 3× self-consistency). Stop if agreement.
-2. **Stage 2 (panel):** Full panel, 1 round, judge-synthesized (NOT majority vote). Stop if ≥2 decorrelated families agree.
-3. **Stage 3 (debate):** Full debate pipeline. Reserved for genuinely hard/contested questions.
-
-### `/dex:debate` — multi-round debate
+### `/dex` = `/dex:debate` — multi-round debate
 
 - **Round 0:** Claude's blind draft (committed before advisors run).
 - **Round 1:** Independent answers from all panel members (optional `--samples 3` self-consistency).
@@ -143,7 +137,7 @@ node scripts/eval.mjs --mode ask --provider cerebras --category trap
 
 Copy `eval-set.json` to `~/.dex/eval-set.json` before running.
 
-`debate`/`auto` are Claude-orchestrated — run `/dex:debate` on failure items from the scorecard.
+`debate` is Claude-orchestrated — run `/dex:debate` on failure items from the scorecard.
 
 ---
 

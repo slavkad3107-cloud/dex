@@ -1,14 +1,15 @@
 # dex
 
 Claude Code plugin — a **Claude-as-judge ensemble** for accurate answers. Claude answers first, consults a panel of
-**free/local advisor models**, escalates by difficulty (`/dex:auto`), runs a multi-round **debate**
-(anonymous critique + devil's advocate) with **external verification** (WebSearch/compute), and
-**machine-evaluates** itself (`/dex:eval`). Naive majority-vote (fuse) is **disabled** — measured worst.
-Local CLIs only; synchronous (no background jobs).
+**free/local advisor models**, runs a multi-round **debate** (anonymous critique + devil's advocate)
+with **external verification** (WebSearch/compute), and **machine-evaluates** itself (`/dex:eval`).
+Naive majority-vote (fuse) is **disabled** — measured worst. Local CLIs only; synchronous (no background jobs).
+
+`/dex` = `/dex:debate` (default, always full pipeline). `/dex:auto` is **disabled** — debate is always run.
 
 ## Layout
 - `commands/` — slash commands (`auto`, `debate`, `ask`, `eval`, `setup`, `config`); thin Claude-side wrappers.
-  - **`auto` is the recommended default** = cost-aware **router/cascade**: cheap 1-voice probe → escalate to the **panel** (low confidence/instability) → `debate` (residual disagreement). Stops at the first confident stage. Measured efficiency winner (≈ debate accuracy at much lower average cost).
+  - **`debate` is the default** (`/dex` = `/dex:debate`): full multi-round pipeline always. `/dex:auto` is disabled.
   - `eval` = run the machine-scored eval harness (`scripts/eval.mjs`) and print a stratified scorecard.
   - **`fuse` (standalone 1-round naive synthesis) and the naive-majority ENSEMBLE are DISABLED** (`commands/fuse.md.disabled`): measured WORST in both regimes (78% easy, **38% hard** — weak voices outvote the strong one, dropping below a single good model and below Claude-alone). The panel is still queried in parallel by `auto`/`debate` via the `dex.mjs fuse` **runner**, but answers are **judge-synthesized (quality-weighted) + verified**, never majority-voted.
 - `scripts/dex.mjs` — zero-dependency Node runner: a **provider registry** + config layer.
