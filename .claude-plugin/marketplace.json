@@ -6,7 +6,7 @@
     {
       "name": "dex",
       "source": ".",
-      "description": "dex — Claude-as-judge ensemble (auto router · debate · external verification · machine eval)."
+      "description": "dex — Claude-as-judge ensemble (debate · external verification · machine eval · self-optimization)."
     }
   ]
 }

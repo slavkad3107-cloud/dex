@@ -23,5 +23,5 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/eval.mjs" --mode fuse
 
 Present the scorecard verbatim. Then:
 - Point out the weakest **category × difficulty** cells and the **ensemble-failure item ids**.
-- Note that `eval.mjs` measures only `ask`/`fuse` (one dex call); `debate`/`auto` are
-  Claude-orchestrated, so to measure those, run `/dex:debate` on the listed failure items.
+- Note that `eval.mjs` measures only `ask`/`fuse` (one dex call); `debate` is
+  Claude-orchestrated, so to measure it, run `/dex:debate` on the listed failure items.

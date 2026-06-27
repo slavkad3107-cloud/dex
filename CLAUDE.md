@@ -8,7 +8,7 @@ Naive majority-vote (fuse) is **disabled** — measured worst. Local CLIs only; 
 `/dex` = `/dex:debate` (default, always full pipeline). `/dex:auto` is **disabled** — debate is always run.
 
 ## Layout
-- `commands/` — slash commands (`auto`, `debate`, `ask`, `eval`, `setup`, `config`); thin Claude-side wrappers.
+- `commands/` — slash commands (`dex`, `debate`, `ask`, `eval`, `setup`, `config`, `optimize`); thin Claude-side wrappers.
   - **`debate` is the default** (`/dex` = `/dex:debate`): full multi-round pipeline always. `/dex:auto` is disabled.
   - `eval` = run the machine-scored eval harness (`scripts/eval.mjs`) and print a stratified scorecard.
   - **`fuse` (standalone 1-round naive synthesis) and the naive-majority ENSEMBLE are DISABLED** (`commands/fuse.md.disabled`): measured WORST in both regimes (78% easy, **38% hard** — weak voices outvote the strong one, dropping below a single good model and below Claude-alone). The panel is still queried in parallel by `auto`/`debate` via the `dex.mjs fuse` **runner**, but answers are **judge-synthesized (quality-weighted) + verified**, never majority-voted.
@@ -19,7 +19,7 @@ Naive majority-vote (fuse) is **disabled** — measured worst. Local CLIs only; 
   lowercase, ё→е, collapse ws; `correct = no reject AND (all acceptAll, else any accept)`), prints a
   stratified scorecard (model × category × difficulty + ensemble = majority-of-panel-correct). Auto-loads
   API keys from `~/.claude/settings.json` — no manual export. Only `ask`/`fuse` are auto-measurable;
-  `debate`/`auto` are Claude-orchestrated (run `/dex:debate` on the listed failures).
+  `debate` is Claude-orchestrated (run `/dex:debate` on the listed failures).
 - `skills/dex-synthesis/SKILL.md` — the judge/synthesis contract.
 - `.claude-plugin/` — `plugin.json` + `marketplace.json` (repo is its own single-plugin marketplace).
 
