@@ -472,9 +472,18 @@ function resolvePanel(config) {
   return base.filter((n) => PROVIDERS[n] && isEnabled(n, config));
 }
 
-function resolveTimeoutMs(opts, config) {
-  const sec = Number(opts.timeout) || Number(process.env.DEX_TIMEOUT) || config.timeout || DEFAULT_TIMEOUT_S;
-  return (sec > 0 ? sec : DEFAULT_TIMEOUT_S) * 1000; // ignore non-positive timeouts
+// Per-provider fast-timeout defaults: cloud APIs that typically respond in <5s shouldn't block
+// debate/auto rounds for 3 minutes if they hang — a 30s cap surfaces the error quickly.
+const FAST_PROVIDERS = new Set(["groq", "cerebras", "ghmodels", "or-llama", "or-qwen", "or-gemma",
+  "or-nemotron", "or-gptoss", "or-coder", "mistral", "cohere"]);
+const FAST_TIMEOUT_S = 30;
+
+function resolveTimeoutMs(opts, config, providerName) {
+  // Explicit flag / env / config always wins. Otherwise use per-provider fast default for cloud APIs.
+  const explicit = Number(opts.timeout) || Number(process.env.DEX_TIMEOUT) || config.timeout;
+  if (explicit > 0) return explicit * 1000;
+  if (providerName && FAST_PROVIDERS.has(providerName)) return FAST_TIMEOUT_S * 1000;
+  return DEFAULT_TIMEOUT_S * 1000;
 }
 
 function warnConfigErrors(config) {
@@ -758,7 +767,7 @@ async function cmdRun(opts) {
   if (!prompt) { process.stderr.write("error: no prompt (use --prompt-file, --prompt, or stdin)\n"); process.exit(2); }
 
   const { model, isDefault } = resolveModel(provider, opts.model, config);
-  const timeoutMs = resolveTimeoutMs(opts, config);
+  const timeoutMs = resolveTimeoutMs(opts, config, provider);
   const res = await runProvider(provider, { prompt, model, isDefault, cwd, timeoutMs });
   const result = { provider, model: res.model, ok: res.ok, text: res.ok ? res.text : "", error: res.ok ? null : res.error };
 
@@ -803,7 +812,6 @@ async function cmdFuse(opts) {
     process.exit(1);
   }
 
-  const timeoutMs = resolveTimeoutMs(opts, config);
   // Self-consistency (#2): with --samples N>1, query each voice N times. A voice whose N answers
   // disagree on the load-bearing claim is internally UNSTABLE → the judge treats it as low-confidence
   // (so a wobbly weak voice self-demotes); a voice stable across samples is high-confidence. Semantic
@@ -811,6 +819,7 @@ async function cmdFuse(opts) {
   const samples = Math.max(1, Math.min(5, Number(opts.samples) || 1));
   const results = await Promise.all(panel.map(async (name) => {
     const { model, isDefault } = resolveModel(name, opts[`${name}-model`], config);
+    const timeoutMs = resolveTimeoutMs(opts, config, name);
     if (samples <= 1) {
       const res = await runProvider(name, { prompt, model, isDefault, cwd, timeoutMs });
       return { provider: name, model: res.model, ok: res.ok, text: res.ok ? res.text : "", error: res.ok ? null : res.error };

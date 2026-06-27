@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Syntax check all scripts
+        run: |
+          for f in scripts/*.mjs; do
+            echo "checking $f"
+            node --check "$f"
+          done
+
+      - name: Validate JSON files
+        run: |
+          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json eval-set.json; do
+            echo "validating $f"
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8')); console.log('ok')"
+          done
+
+      - name: Check eval-set integrity
+        run: |
+          node -e "
+            const set = JSON.parse(require('fs').readFileSync('eval-set.json','utf8'));
+            const items = set.items;
+            if (!Array.isArray(items) || items.length === 0) throw new Error('no items');
+            for (const it of items) {
+              if (!it.id || !it.category || !it.difficulty || !it.question)
+                throw new Error('malformed item id=' + it.id);
+              if (!it.accept && !it.acceptAll) throw new Error('no scoring on id=' + it.id);
+            }
+            console.log('eval-set OK —', items.length, 'items');
+          "
