@@ -130,6 +130,14 @@ async function main() {
     rows.push({ id: it.id, category: it.category, difficulty: it.difficulty, ensemble: ensOk ? "✓" : "✗", cells: cell });
   }
 
+  // Append run to history log for trend tracking
+  const historyPath = path.join(HOME, ".dex", "eval-history.jsonl");
+  const historyEntry = JSON.stringify({
+    ts: new Date().toISOString(), mode, provider: mode === "ask" ? provider : undefined,
+    items: items.length, perModel, rows: rows.map(r => ({ id: r.id, category: r.category, difficulty: r.difficulty })),
+  });
+  try { fs.appendFileSync(historyPath, historyEntry + "\n"); } catch {}
+
   if (asJson) { process.stdout.write(JSON.stringify({ mode, provider: mode === "ask" ? provider : undefined, perModel, ensemble, rows }, null, 2) + "\n"); return; }
 
   const models = Object.keys(perModel);

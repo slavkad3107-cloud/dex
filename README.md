@@ -82,6 +82,7 @@ All bundled — no extra installs beyond Node.js. Only API keys needed.
 | `mistral` | mistral-small-latest | `MISTRAL_API_KEY` | console.mistral.ai |
 | `groq` | llama-3.3-70b-versatile | `GROQ_API_KEY` | console.groq.com |
 | `cerebras` | gpt-oss-120b | `CEREBRAS_API_KEY` | cloud.cerebras.ai |
+| `cohere` | command-a-03-2025 | `COHERE_API_KEY` | dashboard.cohere.com |
 | `or-gemma` | google/gemma-4-31b-it:free | `OPENROUTER_API_KEY` | openrouter.ai |
 | `qwen-q4` | qwen2.5:7b-instruct-q4_K_M | — (local Ollama) | ollama.com |
 
@@ -120,7 +121,7 @@ Naive majority vote lets weak/noisy voices outvote the strong one. In our eval, 
 ```json
 // ~/.dex/config.json  (user-level)  or  ./.dex.json  (project-level)
 {
-  "panel": ["deepseek", "groq", "cerebras", "mistral", "or-gemma", "qwen-q4"],
+  "panel": ["deepseek", "groq", "cerebras", "mistral", "cohere", "or-gemma", "qwen-q4"],
   "timeout": 180
 }
 ```

@@ -1,11 +1,10 @@
 # dex
 
-Claude Code plugin — a **Claude-as-judge ensemble** for accurate answers (forked from
-[junkim100/gavel](https://github.com/junkim100/gavel), MIT). Claude answers first, consults a panel of
+Claude Code plugin — a **Claude-as-judge ensemble** for accurate answers. Claude answers first, consults a panel of
 **free/local advisor models**, escalates by difficulty (`/dex:auto`), runs a multi-round **debate**
 (anonymous critique + devil's advocate) with **external verification** (WebSearch/compute), and
 **machine-evaluates** itself (`/dex:eval`). Naive majority-vote (fuse) is **disabled** — measured worst.
-Local CLIs only; synchronous (no background jobs). (Package id `dex`; internal config/dir fully renamed — `~/.dex`, `DEX_*`, `scripts/dex.mjs`, dir `dex-main` — a deferred full internal rename.)
+Local CLIs only; synchronous (no background jobs).
 
 ## Layout
 - `commands/` — slash commands (`auto`, `debate`, `ask`, `eval`, `setup`, `config`); thin Claude-side wrappers.
