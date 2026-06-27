@@ -65,8 +65,9 @@ For local Ollama models: install [ollama](https://ollama.com), pull a model (`ol
 |---|---|
 | `/dex:auto <task>` | **Recommended default.** Cheap probe first → escalate to panel → debate only if genuinely hard. |
 | `/dex:debate <task>` | Full multi-round debate: blind draft → structured critique → claim verification → synthesis audit. |
-| `/dex:ask <provider> <task>` | Query a single provider and show the raw answer (no synthesis). |
+| `/dex:ask <provider\|all> <task>` | Query one provider or the full panel (no synthesis — raw answers side by side). |
 | `/dex:eval [fuse\|ask <provider>]` | Run the machine-scored eval harness and print a stratified scorecard. |
+| `/dex:optimize [--cycles N]` | **Self-optimization loop** — finds weakest eval cell, proposes panel changes, tests them, applies the winner. |
 | `/dex:setup` | Check provider auth and readiness. |
 | `/dex:config [show\|set\|unset]` | View or change settings (model, timeout, panel). |
 
