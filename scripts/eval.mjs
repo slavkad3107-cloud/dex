@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// gavel eval harness — runner + machine scorer. Reads ~/.gavel/eval-set.json, runs each item through a
+// dex eval harness — runner + machine scorer. Reads ~/.dex/eval-set.json, runs each item through a
 // mode (fuse | ask), machine-scores every answer via the item's accept/reject/acceptAll regex contract,
 // and prints a stratified scorecard (per model × category × difficulty + ensemble). Zero npm deps.
 //
@@ -10,13 +10,15 @@
 //
 // Keys are auto-loaded from ~/.claude/settings.json `env` — no manual export needed.
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 const HOME = os.homedir();
-const GAVEL = path.join(HOME, ".claude", "gavel-main", "scripts", "gavel.mjs");
-const EVAL_PATH = path.join(HOME, ".gavel", "eval-set.json");
+const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
+const DEX = path.join(SCRIPTS_DIR, "dex.mjs");
+const EVAL_PATH = path.join(HOME, ".dex", "eval-set.json");
 const SETTINGS = path.join(HOME, ".claude", "settings.json");
 
 function arg(name, def) {
@@ -63,7 +65,7 @@ function score(answer, item) {
 
 function runGavel(args, input) {
   return new Promise((resolve) => {
-    const child = spawn("node", [GAVEL, ...args], { env, stdio: ["pipe", "pipe", "ignore"], shell: false });
+    const child = spawn("node", [DEX, ...args], { env, stdio: ["pipe", "pipe", "ignore"], shell: false });
     let out = "";
     child.stdout.on("data", (d) => (out += d));
     child.on("error", () => resolve(null));
@@ -135,7 +137,7 @@ async function main() {
   const diffs = ["easy", "med", "hard"].filter((d) => items.some((i) => i.difficulty === d));
   const L = (s, n) => String(s).padEnd(n);
 
-  console.log(`\nGAVEL EVAL — mode=${mode}${mode === "ask" ? " (" + provider + ")" : ""} · ${items.length} items` + (samples ? ` · samples=${samples}` : ""));
+  console.log(`\nDEX EVAL — mode=${mode}${mode === "ask" ? " (" + provider + ")" : ""} · ${items.length} items` + (samples ? ` · samples=${samples}` : ""));
   console.log("=".repeat(64));
   console.log(L("model", 12) + L("acc", 11) + cats.map((c) => L(c.slice(0, 7), 9)).join("") + diffs.map((d) => L(d, 6)).join(""));
   const line = (name, o, cat, diff) =>
@@ -145,7 +147,7 @@ async function main() {
   for (const m of models) console.log(line(m, perModel[m].overall, perModel[m].cat, perModel[m].diff));
   console.log("=".repeat(64));
   console.log("note: naive-majority ENSEMBLE/fuse is DISABLED (measured worst — weak voices outvote the");
-  console.log("      strong one). This shows PER-MODEL accuracy; use /gavel:auto or /gavel:debate (judge +");
+  console.log("      strong one). This shows PER-MODEL accuracy; use /dex:auto or /dex:debate (judge +");
   console.log("      verification), never a majority vote of the panel.");
 }
 

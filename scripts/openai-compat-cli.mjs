@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Generic OpenAI-compatible chat client — one wrapper for any provider exposing a
-// `/chat/completions` endpoint (Groq, OpenRouter, Cerebras, GitHub Models, …). gavel calls it
+// `/chat/completions` endpoint (Groq, OpenRouter, Cerebras, GitHub Models, …). dex calls it
 // through a per-provider shim that hard-codes the flags below; the prompt arrives on stdin.
 //
 // TRANSPORT: uses `curl`, not node's https. Some Cloudflare-fronted APIs (Groq, Cerebras) block
@@ -13,7 +13,7 @@
 //   --key-env <ENVVAR>       name of the env var holding the API key
 //   --model-env <ENVVAR>     name of the env var that may override the model
 //   --default-model <model>  model used when --model-env is unset
-//   --version                print version and exit (used by gavel's install probe)
+//   --version                print version and exit (used by dex install probe)
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -76,8 +76,8 @@ const body = JSON.stringify({
 // Body + auth header live in temp files: body has no secret; the header file holds the key and is
 // passed via `-H @file` so the key never appears in curl's argv. Both are deleted in finally.
 const stamp = `${process.pid}-${Date.now()}`;
-const bodyFile = path.join(os.tmpdir(), `gavel-oai-${stamp}.json`);
-const hdrFile = path.join(os.tmpdir(), `gavel-oai-${stamp}.hdr`);
+const bodyFile = path.join(os.tmpdir(), `dex-oai-${stamp}.json`);
+const hdrFile = path.join(os.tmpdir(), `dex-oai-${stamp}.hdr`);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

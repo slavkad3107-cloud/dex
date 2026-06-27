@@ -1,5 +1,5 @@
 {
-  "_note": "gavel eval harness set. Each item: category, difficulty, question, answer (human), rubric (human), and machine-scoring fields accept/reject/acceptAll (case-insensitive regex on a lightly-normalized answer: lowercased, ё→е, whitespace collapsed). correct = no `reject` matches AND (all `acceptAll` match if present, else any `accept` matches). Run with scripts/eval.mjs. Scales to a larger stratified set from public benchmarks (MMLU/GSM8K/TruthfulQA).",
+  "_note": "dex eval harness set. Each item: category, difficulty, question, answer (human), rubric (human), and machine-scoring fields accept/reject/acceptAll (case-insensitive regex on a lightly-normalized answer: lowercased, ё→е, whitespace collapsed). correct = no `reject` matches AND (all `acceptAll` match if present, else any `accept` matches). Run with scripts/eval.mjs. Scales to a larger stratified set from public benchmarks (MMLU/GSM8K/TruthfulQA).",
   "items": [
     {"id":1,"category":"fact","difficulty":"easy","question":"Сколько костей в скелете взрослого человека?","answer":"206","rubric":"Только 206.","accept":["206"]},
     {"id":2,"category":"fact","difficulty":"easy","question":"В каком году опубликована статья 'Attention Is All You Need' (Transformer)?","answer":"2017","rubric":"Обязателен 2017.","accept":["2017"]},

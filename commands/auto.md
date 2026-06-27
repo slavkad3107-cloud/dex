@@ -3,7 +3,7 @@ description: Auto-router — cheapest path first (1 strong voice), escalate to f
 argument-hint: "<task or question>"
 ---
 
-You are running **gavel:auto** — a cost-aware cascade. Spend model effort only when the answer is
+You are running **dex:auto** — a cost-aware cascade. Spend model effort only when the answer is
 uncertain. You (Claude) are panelist + judge + actor. Escalate through the stages below and **STOP at
 the first stage that yields a confident answer**, then act. Get prompts to models via a temp file +
 `--prompt-file --json` (never inline in the shell).
@@ -17,7 +17,7 @@ If the task is empty, ask what to route, then stop.
 single strongest reliable voice with self-consistency (3 samples):
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/gavel.mjs" run --provider cerebras --cwd "$(pwd)" --prompt-file /tmp/gavel-auto.txt
+node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" run --provider cerebras --cwd "$(pwd)" --prompt-file /tmp/dex-auto.txt
 ```
 
 (Run it ~3× — or use `fuse --samples 3` limited to one provider — to gauge stability.) **STOP here and
@@ -29,7 +29,7 @@ panel once (the `fuse` subcommand is just the parallel-query transport — naive
 disabled because it measured worst, letting weak voices outvote the strong one):
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/gavel.mjs" fuse --cwd "$(pwd)" --json --prompt-file /tmp/gavel-auto.txt
+node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" fuse --cwd "$(pwd)" --json --prompt-file /tmp/dex-auto.txt
 ```
 
 Synthesize by **reasoning quality, not vote count** — a single well-argued/verified answer outranks a

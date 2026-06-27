@@ -22,13 +22,13 @@ the advisors **only via a temp file + `--prompt-file`** (never in the shell comm
 ---
 
 **Round 0 — your blind draft.** Before any advisor runs, write your **own complete answer** to a fresh
-temp file (e.g. `/tmp/gavel-claude-<ts>.md`; on Windows use `%TEMP%\gavel-claude-<ts>.md`). It must
+temp file (e.g. `/tmp/dex-claude-<ts>.md`; on Windows use `%TEMP%\dex-claude-<ts>.md`). It must
 stand on its own. Do **not** edit the workspace yet. This is your committed entry into the debate.
 
 **Round 1 — independent answers.** Write the verbatim task to a fresh temp file, then run:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/gavel.mjs" fuse --cwd "$(pwd)" --json --prompt-file /tmp/gavel-prompt-r1.txt
+node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" fuse --cwd "$(pwd)" --json --prompt-file /tmp/dex-prompt-r1.txt
 ```
 
 Parse the JSON array (`{provider, model, ok, text, error}`). Keep the `ok` answers; note any `[error]`
@@ -52,7 +52,7 @@ verdict (`high` needs stable agreement; instability pushes a claim toward `tenta
    место наиболее популярной/консенсусной позиции и попробуй её опровергнуть — даже если в целом
    согласен. (3) Затем выдай свой УТОЧНЁННЫЙ ответ. Кратко и по делу."*
 
-Run `gavel.mjs fuse --json --prompt-file …` again on this file. Meanwhile, **refine your own draft**
+Run `dex.mjs fuse --json --prompt-file …` again on this file. Meanwhile, **refine your own draft**
 the same way (as a panelist). Parse the refined answers.
 
 **Judge for convergence.** Compare the Round-2 answers (incl. your refined view). Decide whether
@@ -85,7 +85,7 @@ minority can drown in it. Localize the (limited) verification budget to the clai
    may **correct** a refuted claim or **downgrade** an unverifiable one — but NEVER upgrade to "certain"
    on weak/single sourcing. Keep the panel's answer as the prior; move it only on strong evidence.
 
-**Synthesize & act.** Apply the **gavel-synthesis** skill over the final-round answers plus your own
+**Synthesize & act.** Apply the **dex-synthesis** skill over the final-round answers plus your own
 refined view (co-equal inputs), **aggregating per claim**: for each atomic claim take the best-supported
 or verified fragment, mixing across models (model X may be right on part A, model Y on part B), and
 **defer to the verification verdict table** for any checked claim. **Weight by reasoning quality, not
@@ -98,7 +98,7 @@ weakest point, try to refute it, and fix whatever doesn't survive.
 **Then a cross-family synthesis audit** (catches the judge-as-unreliable-aggregator failure that the
 self-check — Opus checking Opus — cannot): write your draft synthesis to a temp file and send it
 (+ the original question + the panel's critiques) to ONE **non-Claude** voice via
-`gavel.mjs run --provider cerebras` (or `deepseek`), tasked ONLY to flag (a) valid panel points your
+`dex.mjs run --provider cerebras` (or `deepseek`), tasked ONLY to flag (a) valid panel points your
 synthesis **dropped**, and (b) claims in your synthesis that **no panelist supported** (aggregation
 hallucination). Each objection must quote the specific panel text as evidence, else discard it. Address
 every surviving objection in one final pass — accept it, or reject with a stated reason. Only then:

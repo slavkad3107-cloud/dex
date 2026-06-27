@@ -4,8 +4,8 @@
 secrets.*
 settings.json
 
-# Per-machine gavel config (has local paths + panel choices)
-.gavel.json
+# Per-machine dex config (has local paths + panel choices)
+.dex.json
 
 # Node
 node_modules/

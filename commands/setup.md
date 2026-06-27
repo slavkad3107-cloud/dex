@@ -1,5 +1,5 @@
 ---
-description: Check whether the Codex and Gemini CLIs are installed and authenticated for gavel
+description: Check whether the Codex and Gemini CLIs are installed and checking dex provider readiness
 argument-hint: ""
 allowed-tools: Bash(node:*), Bash(npm:*), AskUserQuestion
 ---
@@ -7,7 +7,7 @@ allowed-tools: Bash(node:*), Bash(npm:*), AskUserQuestion
 Run:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/gavel.mjs" setup --json
+node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" setup --json
 ```
 
 Read the JSON report. It lists each provider under `providers.<name>` with `enabled`, `installed`,
@@ -29,6 +29,6 @@ Then present the final report, preserving guidance:
   some required flags may be unsupported (suggest upgrading).
 - A provider `disabled` in settings is intentionally skipped — do not nag about it.
 
-Note: gavel needs **at least one** usable advisor (`ready: true`); it works best with both. Codex
+Note: dex needs **at least one** usable advisor (`ready: true`); it works best with both. Codex
 explores the repo read-only; Gemini runs isolated. Model/timeout defaults and per-provider settings
-live in `~/.gavel/config.json` or a project `./.gavel.json`.
+live in `~/.dex/config.json` or a project `./.dex.json`.

@@ -4,7 +4,7 @@
 
 Claude answers first, consults a panel of free/local advisor models, escalates by difficulty (`/dex:auto`), runs a multi-round **debate** with anonymous critique and external verification, and **machine-evaluates itself** (`/dex:eval`).
 
-Forked from [junkim100/gavel](https://github.com/junkim100/gavel) (MIT).
+
 
 ---
 
@@ -85,7 +85,7 @@ All bundled — no extra installs beyond Node.js. Only API keys needed.
 | `or-gemma` | google/gemma-4-31b-it:free | `OPENROUTER_API_KEY` | openrouter.ai |
 | `qwen-q4` | qwen2.5:7b-instruct-q4_K_M | — (local Ollama) | ollama.com |
 
-A money guard (`expectFree`) refuses any non-`:free` OpenRouter model unless `GAVEL_ALLOW_PAID=1`.
+A money guard (`expectFree`) refuses any non-`:free` OpenRouter model unless `DEX_ALLOW_PAID=1`.
 
 `codex` and `gemini` are disabled (gemini is geo-blocked; codex replaced by better free alternatives).
 
@@ -118,7 +118,7 @@ Naive majority vote lets weak/noisy voices outvote the strong one. In our eval, 
 ## Configuration
 
 ```json
-// ~/.gavel/config.json  (user-level)  or  ./.gavel.json  (project-level)
+// ~/.dex/config.json  (user-level)  or  ./.dex.json  (project-level)
 {
   "panel": ["deepseek", "groq", "cerebras", "mistral", "or-gemma", "qwen-q4"],
   "timeout": 180
@@ -139,7 +139,7 @@ node scripts/eval.mjs --mode fuse
 node scripts/eval.mjs --mode ask --provider cerebras --category trap
 ```
 
-Copy `eval-set.json` to `~/.gavel/eval-set.json` before running.
+Copy `eval-set.json` to `~/.dex/eval-set.json` before running.
 
 `debate`/`auto` are Claude-orchestrated — run `/dex:debate` on failure items from the scorecard.
 

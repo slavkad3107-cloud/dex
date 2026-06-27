@@ -1,5 +1,5 @@
 ---
-description: Send a prompt to a single gavel provider (cloud or local) and show its answer verbatim
+description: Send a prompt to a single dex provider (cloud or local) and show its answer verbatim
 argument-hint: "<provider-slug> <prompt>"
 allowed-tools: Bash(node:*), Write
 ---
@@ -11,7 +11,7 @@ $ARGUMENTS
 
 Parse and run safely:
 - Read the **first word** of the arguments to decide the provider. It MUST be a provider slug
-  registered in gavel — the slugs printed by `/dex:setup` (currently: `deepseek`, `mistral`, `cohere`,
+  registered in dex — the slugs printed by `/dex:setup` (currently: `deepseek`, `mistral`, `cohere`,
   `groq`, `cerebras`, `ghmodels`, `or-llama`, `or-qwen`, `or-gemma`, `or-nemotron`, `or-gptoss`,
   `or-coder`, `qwen`, `qwen-q4`, `llama32`, `llama32-3b`, `deepseek-r1`). If it is anything else, or the arguments
   are empty, show the
@@ -20,12 +20,12 @@ Parse and run safely:
 - **Security:** the provider is the only value you place into the shell command. Emit ONLY the
   validated literal slug there — never copy any other text from the arguments into the command line.
 - Write the **rest** of the arguments (the prompt) verbatim to a fresh temp file with the **Write
-  tool** (use a unique name, e.g. `/tmp/gavel-prompt-<timestamp>.txt`) — never put the prompt text in
+  tool** (use a unique name, e.g. `/tmp/dex-prompt-<timestamp>.txt`) — never put the prompt text in
   the shell command. Delete the file afterward.
 - Then run, replacing `codex` below with the one validated literal and using your temp file path:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/gavel.mjs" run --provider codex --cwd "$(pwd)" --prompt-file /tmp/gavel-prompt-XXXX.txt
+node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" run --provider codex --cwd "$(pwd)" --prompt-file /tmp/dex-prompt-XXXX.txt
 ```
 
 Output rules:

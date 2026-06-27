@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// gavel — zero-dependency runner that shells out to advisor model CLIs (codex, gemini, …).
+// dex — zero-dependency runner that shells out to advisor model CLIs (codex, gemini, …).
 // Subcommands: setup | run | fuse. See ../CLAUDE.md for the contracts this implements.
 //
 // Design notes:
@@ -106,7 +106,7 @@ const PROVIDERS = {
     isolation: "readonly-sandbox",
     // Preferred default; if the account can't use it, runProvider falls back to the codex CLI default.
     defaultModel: "gpt-5.5-pro",
-    modelEnv: "GAVEL_CODEX_MODEL",
+    modelEnv: "DEX_CODEX_MODEL",
     installHint: "install with `npm install -g @openai/codex`",
     authHint: "authenticate with `!codex login`",
     checkAuth() {
@@ -115,7 +115,7 @@ const PROVIDERS = {
       return fs.existsSync(p) ? { authed: true, via: p } : { authed: false, via: null };
     },
     async run({ prompt, model, cwd, timeoutMs, env }) {
-      const tmp = path.join(os.tmpdir(), `gavel-codex-${process.pid}-${Date.now()}.txt`);
+      const tmp = path.join(os.tmpdir(), `dex-codex-${process.pid}-${Date.now()}.txt`);
       // -s read-only enforces the advisor (no writes); prompt is piped on stdin (never argv).
       // model may be empty (fallback) → omit -m so codex uses its own default model.
       const args = [
@@ -142,7 +142,7 @@ const PROVIDERS = {
     tested: "1.0.0",
     isolation: "isolated",
     defaultModel: "deepseek-chat",
-    modelEnv: "GAVEL_DEEPSEEK_MODEL",
+    modelEnv: "DEX_DEEPSEEK_MODEL",
     installHint: "bundled — set DEEPSEEK_API_KEY to enable (platform.deepseek.com)",
     authHint: "set DEEPSEEK_API_KEY environment variable",
     checkAuth() {
@@ -152,7 +152,7 @@ const PROVIDERS = {
     },
     async run({ prompt, model, cwd, timeoutMs, env }) {
       const runEnv = { ...env };
-      if (model) runEnv.GAVEL_DEEPSEEK_MODEL = model;
+      if (model) runEnv.DEX_DEEPSEEK_MODEL = model;
       const r = await runCommand(process.execPath, [path.join(SCRIPTS_DIR, "deepseek-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
       if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
       if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
@@ -168,7 +168,7 @@ const PROVIDERS = {
     tested: "1.0.0",
     isolation: "isolated",
     defaultModel: "mistral-small-latest",
-    modelEnv: "GAVEL_MISTRAL_MODEL",
+    modelEnv: "DEX_MISTRAL_MODEL",
     installHint: "bundled — set MISTRAL_API_KEY to enable (console.mistral.ai)",
     authHint: "set MISTRAL_API_KEY environment variable",
     checkAuth() {
@@ -178,7 +178,7 @@ const PROVIDERS = {
     },
     async run({ prompt, model, cwd, timeoutMs, env }) {
       const runEnv = { ...env };
-      if (model) runEnv.GAVEL_MISTRAL_MODEL = model;
+      if (model) runEnv.DEX_MISTRAL_MODEL = model;
       const r = await runCommand(process.execPath, [path.join(SCRIPTS_DIR, "mistral-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
       if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
       if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
@@ -194,7 +194,7 @@ const PROVIDERS = {
     tested: "1.0.0",
     isolation: "isolated",
     defaultModel: "command-a-03-2025",
-    modelEnv: "GAVEL_COHERE_MODEL",
+    modelEnv: "DEX_COHERE_MODEL",
     installHint: "bundled — set COHERE_API_KEY to enable (dashboard.cohere.com)",
     authHint: "set COHERE_API_KEY environment variable",
     checkAuth() {
@@ -204,7 +204,7 @@ const PROVIDERS = {
     },
     async run({ prompt, model, cwd, timeoutMs, env }) {
       const runEnv = { ...env };
-      if (model) runEnv.GAVEL_COHERE_MODEL = model;
+      if (model) runEnv.DEX_COHERE_MODEL = model;
       const r = await runCommand(process.execPath, [path.join(SCRIPTS_DIR, "cohere-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
       if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
       if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
@@ -227,7 +227,7 @@ const PROVIDERS = {
     isolation: "isolated",
     // Preferred default; if the account can't use it, runProvider falls back to the gemini CLI default.
     defaultModel: "gemini-3.1-pro",
-    modelEnv: "GAVEL_GEMINI_MODEL",
+    modelEnv: "DEX_GEMINI_MODEL",
     installHint: "install with `npm install -g @google/gemini-cli`",
     authHint: "run `!gemini` once to log in (OAuth) or set GEMINI_API_KEY",
     checkAuth() {
@@ -272,7 +272,7 @@ function makeOpenAiProvider({ bin, base, defaultModel, modelEnv, keyEnv, signupU
     defaultModel,
     modelEnv,
     // expectFree: this provider is meant to use only OpenRouter `:free` models. A money guard below
-    // refuses any model without the `:free` suffix (override with GAVEL_ALLOW_PAID=1) so a mistaken
+    // refuses any model without the `:free` suffix (override with DEX_ALLOW_PAID=1) so a mistaken
     // config edit can never silently route to a paid model. setup also warns about it.
     expectFree,
     installHint: `bundled — set ${keyEnv} to enable (${signupUrl})`,
@@ -282,8 +282,8 @@ function makeOpenAiProvider({ bin, base, defaultModel, modelEnv, keyEnv, signupU
       return { authed: false, via: null };
     },
     async run({ prompt, model, cwd, timeoutMs, env }) {
-      if (expectFree && model && !model.includes(":free") && !process.env.GAVEL_ALLOW_PAID) {
-        return { ok: false, error: `refusing to call "${model}" — not a :free model (money guard). Append ":free", or set GAVEL_ALLOW_PAID=1 to allow paid models.` };
+      if (expectFree && model && !model.includes(":free") && !process.env.DEX_ALLOW_PAID) {
+        return { ok: false, error: `refusing to call "${model}" — not a :free model (money guard). Append ":free", or set DEX_ALLOW_PAID=1 to allow paid models.` };
       }
       const runEnv = { ...env };
       if (model) runEnv[modelEnv] = model;
@@ -304,9 +304,9 @@ function makeOpenAiProvider({ bin, base, defaultModel, modelEnv, keyEnv, signupU
 }
 
 const OPENAI_COMPAT = [
-  { bin: "groq",     base: "https://api.groq.com/openai/v1/chat/completions",              defaultModel: "llama-3.3-70b-versatile", modelEnv: "GAVEL_GROQ_MODEL",     keyEnv: "GROQ_API_KEY",     signupUrl: "console.groq.com" },
-  { bin: "cerebras", base: "https://api.cerebras.ai/v1/chat/completions",                  defaultModel: "gpt-oss-120b",            modelEnv: "GAVEL_CEREBRAS_MODEL", keyEnv: "CEREBRAS_API_KEY", signupUrl: "cloud.cerebras.ai" },
-  { bin: "ghmodels", base: "https://models.inference.ai.azure.com/chat/completions",       defaultModel: "gpt-4o-mini",             modelEnv: "GAVEL_GHMODELS_MODEL", keyEnv: "GITHUB_TOKEN",     signupUrl: "github.com/marketplace/models" },
+  { bin: "groq",     base: "https://api.groq.com/openai/v1/chat/completions",              defaultModel: "llama-3.3-70b-versatile", modelEnv: "DEX_GROQ_MODEL",     keyEnv: "GROQ_API_KEY",     signupUrl: "console.groq.com" },
+  { bin: "cerebras", base: "https://api.cerebras.ai/v1/chat/completions",                  defaultModel: "gpt-oss-120b",            modelEnv: "DEX_CEREBRAS_MODEL", keyEnv: "CEREBRAS_API_KEY", signupUrl: "cloud.cerebras.ai" },
+  { bin: "ghmodels", base: "https://models.inference.ai.azure.com/chat/completions",       defaultModel: "gpt-4o-mini",             modelEnv: "DEX_GHMODELS_MODEL", keyEnv: "GITHUB_TOKEN",     signupUrl: "github.com/marketplace/models" },
 ];
 for (const c of OPENAI_COMPAT) PROVIDERS[c.bin] = makeOpenAiProvider(c);
 
@@ -328,16 +328,16 @@ const OPENROUTER_MODELS = {
 for (const [slug, model] of Object.entries(OPENROUTER_MODELS)) {
   PROVIDERS[slug] = makeOpenAiProvider({
     bin: "openrouter", base: "https://openrouter.ai/api/v1/chat/completions",
-    defaultModel: model, modelEnv: "GAVEL_OPENROUTER_MODEL",
+    defaultModel: model, modelEnv: "DEX_OPENROUTER_MODEL",
     keyEnv: "OPENROUTER_API_KEY", signupUrl: "openrouter.ai", expectFree: true,
   });
 }
 
 // --- local Ollama models ---------------------------------------------------
 // Each installed Ollama model is registered as its OWN provider, so they appear as separate
-// panelists in /gavel:fuse and can be compared side by side. Local = fully offline, no API key,
+// panelists in /dex:fuse and can be compared side by side. Local = fully offline, no API key,
 // no geo restrictions. `ollama run <model>` reads the prompt on stdin and prints the answer.
-// To add/remove a local model: edit this map to match `ollama list` (key = gavel provider slug).
+// To add/remove a local model: edit this map to match `ollama list` (key = dex provider slug).
 const OLLAMA_MODELS = {
   qwen:          "qwen2.5:7b",
   "qwen-q4":     "qwen2.5:7b-instruct-q4_K_M",
@@ -418,7 +418,7 @@ for (const [slug, tag] of Object.entries(OLLAMA_MODELS)) {
 const PROVIDER_NAMES = Object.keys(PROVIDERS);
 
 // --- config / settings -----------------------------------------------------
-// Precedence (low -> high): defaults < ~/.gavel/config.json < ./.gavel.json < env < CLI flags.
+// Precedence (low -> high): defaults < ~/.dex/config.json < ./.dex.json < env < CLI flags.
 // Shape: { providers: { <name>: { enabled: bool, model: str } }, panel: [name...], timeout: sec }
 
 const DEFAULT_TIMEOUT_S = 1800;
@@ -426,8 +426,8 @@ const DEFAULT_TIMEOUT_S = 1800;
 function loadConfig(cwd) {
   const cfg = { providers: {}, configErrors: [] };
   const sources = [
-    path.join(os.homedir(), ".gavel", "config.json"),
-    path.join(cwd, ".gavel.json"),
+    path.join(os.homedir(), ".dex", "config.json"),
+    path.join(cwd, ".dex.json"),
   ];
   for (const p of sources) {
     let text;
@@ -473,20 +473,20 @@ function resolvePanel(config) {
 }
 
 function resolveTimeoutMs(opts, config) {
-  const sec = Number(opts.timeout) || Number(process.env.GAVEL_TIMEOUT) || config.timeout || DEFAULT_TIMEOUT_S;
+  const sec = Number(opts.timeout) || Number(process.env.DEX_TIMEOUT) || config.timeout || DEFAULT_TIMEOUT_S;
   return (sec > 0 ? sec : DEFAULT_TIMEOUT_S) * 1000; // ignore non-positive timeouts
 }
 
 function warnConfigErrors(config) {
-  for (const e of config.configErrors || []) process.stderr.write(`gavel: ignoring invalid config — ${e}\n`);
+  for (const e of config.configErrors || []) process.stderr.write(`dex: ignoring invalid config — ${e}\n`);
 }
 
 // --- config writing (the `config` subcommand) ------------------------------
-// Reads/writes ONE settings file (user ~/.gavel/config.json or project ./.gavel.json), never the
+// Reads/writes ONE settings file (user ~/.dex/config.json or project ./.dex.json), never the
 // merged view — so `set`/`unset` change exactly that scope and leave precedence intact.
 
-function userConfigPath() { return path.join(os.homedir(), ".gavel", "config.json"); }
-function projectConfigPath(cwd) { return path.join(cwd, ".gavel.json"); }
+function userConfigPath() { return path.join(os.homedir(), ".dex", "config.json"); }
+function projectConfigPath(cwd) { return path.join(cwd, ".dex.json"); }
 
 function readConfigFile(p) {
   let text;
@@ -578,7 +578,7 @@ async function runProvider(name, { prompt, model, isDefault, cwd, timeoutMs }) {
     let res = await p.run({ prompt, model, cwd: runCwd, timeoutMs, env });
     let used = model;
     if (!res.ok && isDefault && model && looksLikeModelError(res.error)) {
-      process.stderr.write(`gavel: ${name} model "${model}" unavailable (${res.error}); falling back to ${name} CLI default.\n`);
+      process.stderr.write(`dex: ${name} model "${model}" unavailable (${res.error}); falling back to ${name} CLI default.\n`);
       res = await p.run({ prompt, model: "", cwd: runCwd, timeoutMs, env });
       used = res.ok ? `${name} default` : model;
     }
@@ -588,7 +588,7 @@ async function runProvider(name, { prompt, model, isDefault, cwd, timeoutMs }) {
   if (p.isolation === "readonly-sandbox") {
     return await exec(cwd, process.env);
   }
-  const tmpCwd = fs.mkdtempSync(path.join(os.tmpdir(), `gavel-${name}-`));
+  const tmpCwd = fs.mkdtempSync(path.join(os.tmpdir(), `dex-${name}-`));
   const env = { ...process.env, PWD: tmpCwd };
   delete env.OLDPWD;
   delete env.INIT_CWD;
@@ -685,14 +685,14 @@ async function cmdSetup(opts) {
     const p = PROVIDERS[name];
     if (!p.expectFree || !isEnabled(name, config)) continue;
     const m = providers[name].model;
-    if (m && !m.includes(":free") && !process.env.GAVEL_ALLOW_PAID) {
-      const w = `${name}: model "${m}" has no :free suffix — it could incur charges (blocked unless GAVEL_ALLOW_PAID=1). Fix: config set ${name}.model <id>:free`;
+    if (m && !m.includes(":free") && !process.env.DEX_ALLOW_PAID) {
+      const w = `${name}: model "${m}" has no :free suffix — it could incur charges (blocked unless DEX_ALLOW_PAID=1). Fix: config set ${name}.model <id>:free`;
       paidRisk.push(w);
       nextSteps.push(w);
     }
   }
 
-  // Readiness reflects whether /gavel:fuse can actually run: at least one PANEL member is usable
+  // Readiness reflects whether /dex:fuse can actually run: at least one PANEL member is usable
   // (not merely "some provider somewhere is usable", which could be excluded by the panel/config).
   const panel = resolvePanel(config);
   const panelUsable = panel.filter((n) => providers[n]?.usable);
@@ -704,7 +704,7 @@ async function cmdSetup(opts) {
   }
   for (const e of config.configErrors) nextSteps.push(`config: ${e}`);
   if (!nextSteps.length) {
-    nextSteps.push(ready ? "Ready — try `/gavel:fuse <task>`." : "No advisor is usable yet — install/authenticate at least one above.");
+    nextSteps.push(ready ? "Ready — try `/dex:fuse <task>`." : "No advisor is usable yet — install/authenticate at least one above.");
   }
 
   const report = {
@@ -719,7 +719,7 @@ async function cmdSetup(opts) {
   }
 
   const mark = (b) => (b ? "✓" : "✗");
-  const lines = ["Gavel setup", "============"];
+  const lines = ["dex setup", "============"];
   lines.push(`node:   ${mark(node.available)} ${node.version || "not found"}`);
   lines.push(`npm:    ${mark(npm.available)} ${npm.version || "not found"}`);
   for (const name of PROVIDER_NAMES) {
@@ -747,11 +747,11 @@ async function cmdRun(opts) {
   warnConfigErrors(config);
   const provider = opts.provider;
   if (!PROVIDERS[provider]) {
-    process.stderr.write(`usage: gavel run --provider <${PROVIDER_NAMES.join("|")}> --prompt-file <path> [--model M] [--cwd DIR] [--timeout S]\n`);
+    process.stderr.write(`usage: dex run --provider <${PROVIDER_NAMES.join("|")}> --prompt-file <path> [--model M] [--cwd DIR] [--timeout S]\n`);
     process.exit(2);
   }
   if (!isEnabled(provider, config)) {
-    process.stderr.write(`error: provider "${provider}" is disabled in settings (enable it in ~/.gavel/config.json or ./.gavel.json)\n`);
+    process.stderr.write(`error: provider "${provider}" is disabled in settings (enable it in ~/.dex/config.json or ./.dex.json)\n`);
     process.exit(2);
   }
   const prompt = await resolvePrompt(opts);
@@ -771,7 +771,7 @@ async function cmdRun(opts) {
 function renderFuse(results) {
   const ok = results.filter((r) => r.ok).length;
   const bar = "=".repeat(64);
-  const out = [`GAVEL PANEL — ${ok}/${results.length} model(s) responded`, bar];
+  const out = [`DEX PANEL — ${ok}/${results.length} model(s) responded`, bar];
   for (const r of results) {
     out.push("", `----- ${r.provider} · ${r.model} · [${r.ok ? "ok" : "error"}] -----`);
     out.push(r.ok ? r.text : `(no answer) ${r.error}`);
@@ -794,10 +794,10 @@ async function cmdFuse(opts) {
   const panel = fullPanel.filter((n) => PROVIDERS[n].checkAuth().authed);
   const skipped = fullPanel.filter((n) => !PROVIDERS[n].checkAuth().authed);
   if (skipped.length) {
-    process.stderr.write(`gavel: skipping unauthenticated panel member(s): ${skipped.join(", ")} (add the API key, or run /gavel:setup)\n`);
+    process.stderr.write(`dex: skipping unauthenticated panel member(s): ${skipped.join(", ")} (add the API key, or run /dex:setup)\n`);
   }
   if (!panel.length) {
-    const msg = "No advisor models are enabled/available. Run `/gavel:setup`.";
+    const msg = "No advisor models are enabled/available. Run `/dex:setup`.";
     if (opts.json) process.stdout.write(JSON.stringify({ panel: [], results: [], note: msg }, null, 2) + "\n");
     else process.stdout.write(msg + "\n");
     process.exit(1);
@@ -833,11 +833,11 @@ async function cmdFuse(opts) {
 }
 
 const CONFIG_USAGE =
-  `usage: gavel config show [--json]\n` +
-  `       gavel config set <key> <value> [--project]\n` +
-  `       gavel config unset <key> [--project]\n` +
+  `usage: dex config show [--json]\n` +
+  `       dex config set <key> <value> [--project]\n` +
+  `       dex config unset <key> [--project]\n` +
   `keys: ${configKeyList().join(", ")}\n` +
-  `--project edits ./.gavel.json (this repo); default edits ~/.gavel/config.json (all projects).`;
+  `--project edits ./.dex.json (this repo); default edits ~/.dex/config.json (all projects).`;
 
 function cmdConfigShow(cwd, opts) {
   const config = loadConfig(cwd);
@@ -854,7 +854,7 @@ function cmdConfigShow(cwd, opts) {
   }
 
   const userP = userConfigPath(), projP = projectConfigPath(cwd);
-  const lines = ["Gavel config (effective)", "========================="];
+  const lines = ["dex config (effective)", "========================="];
   lines.push(`timeout: ${effective.timeout}s`);
   lines.push(`panel:   ${effective.panel.length ? effective.panel.join(", ") : "(none)"}`);
   lines.push("");
@@ -864,12 +864,12 @@ function cmdConfigShow(cwd, opts) {
   }
   lines.push("");
   lines.push("Sources (low→high precedence; later overrides earlier):");
-  lines.push(`  ~/.gavel/config.json  ${fs.existsSync(userP) ? "present" : "absent"}`);
-  lines.push(`  ./.gavel.json         ${fs.existsSync(projP) ? "present" : "absent"}`);
-  lines.push(`  env vars: GAVEL_TIMEOUT, GAVEL_CODEX_MODEL, GAVEL_GEMINI_MODEL`);
+  lines.push(`  ~/.dex/config.json  ${fs.existsSync(userP) ? "present" : "absent"}`);
+  lines.push(`  ./.dex.json         ${fs.existsSync(projP) ? "present" : "absent"}`);
+  lines.push(`  env vars: DEX_TIMEOUT, DEX_CODEX_MODEL, DEX_GEMINI_MODEL`);
   lines.push("");
-  lines.push("Change with: gavel config set <key> <value>  (add --project for this repo only)");
-  lines.push(`  e.g. gavel config set timeout 600   ·   gavel config set codex.model gpt-5.5`);
+  lines.push("Change with: dex config set <key> <value>  (add --project for this repo only)");
+  lines.push(`  e.g. dex config set timeout 600   ·   dex config set codex.model gpt-5.5`);
   process.stdout.write(lines.join("\n") + "\n");
 }
 
@@ -889,7 +889,7 @@ async function cmdConfig(opts) {
   if (!spec) { process.stderr.write(`error: unknown key "${key}".\nkeys: ${configKeyList().join(", ")}\n`); process.exit(2); }
 
   const file = opts.project ? projectConfigPath(cwd) : userConfigPath();
-  const scope = opts.project ? "./.gavel.json (this repo)" : "~/.gavel/config.json (all projects)";
+  const scope = opts.project ? "./.dex.json (this repo)" : "~/.dex/config.json (all projects)";
   const obj = readConfigFile(file); // throws on malformed JSON — we refuse to clobber it
 
   if (action === "set") {
@@ -900,7 +900,7 @@ async function cmdConfig(opts) {
     writeConfigFile(file, obj);
     process.stdout.write(`set ${key} = ${JSON.stringify(parsed)} in ${scope}\n`);
     if (/\.model$/.test(key)) {
-      process.stdout.write(`note: a pinned model opts out of auto-fallback — make sure your account can use it, or \`gavel config unset ${key}\` to restore the default.\n`);
+      process.stdout.write(`note: a pinned model opts out of auto-fallback — make sure your account can use it, or \`dex config unset ${key}\` to restore the default.\n`);
     }
   } else {
     unsetPath(obj, spec.path);
@@ -916,10 +916,10 @@ const opts = parseArgs(process.argv.slice(3));
 const commands = { setup: cmdSetup, run: cmdRun, fuse: cmdFuse, config: cmdConfig };
 const handler = commands[sub];
 if (!handler) {
-  process.stderr.write("usage: gavel <setup|run|fuse|config> [options]\n");
+  process.stderr.write("usage: dex <setup|run|fuse|config> [options]\n");
   process.exit(2);
 }
 handler(opts).catch((err) => {
-  process.stderr.write(`gavel: ${err?.stack || err}\n`);
+  process.stderr.write(`dex: ${err?.stack || err}\n`);
   process.exit(1);
 });

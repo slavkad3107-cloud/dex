@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Thin CLI wrapper for the Mistral API — designed to be called by gavel.mjs as a provider.
+// Thin CLI wrapper for the Mistral API — called by dex as a provider.
 // Usage:
 //   mistral-cli.mjs --version        → print version
 //   mistral-cli.mjs                  → read prompt from stdin, print response to stdout
 // Auth: MISTRAL_API_KEY env var (free key at https://console.mistral.ai).
-// Model: GAVEL_MISTRAL_MODEL env var (default: mistral-small-latest).
+// Model: DEX_MISTRAL_MODEL env var (default: mistral-small-latest).
 import https from "node:https";
 
 const VERSION = "1.0.0";
@@ -34,7 +34,7 @@ if (!prompt.trim()) {
   process.exit(1);
 }
 
-const model = process.env.GAVEL_MISTRAL_MODEL || "mistral-small-latest";
+const model = process.env.DEX_MISTRAL_MODEL || "mistral-small-latest";
 
 const body = JSON.stringify({
   model,

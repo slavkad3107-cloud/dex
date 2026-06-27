@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Thin CLI wrapper for the Cohere v2 Chat API — called by gavel.mjs as a provider.
+// Thin CLI wrapper for the Cohere v2 Chat API — called by dex as a provider.
 // Usage:
 //   cohere-cli.mjs --version        → print version
 //   cohere-cli.mjs                  → read prompt from stdin, print response to stdout
 // Auth: COHERE_API_KEY env var (free trial key at dashboard.cohere.com).
-// Model: GAVEL_COHERE_MODEL env var (default: command-a-03-2025).
+// Model: DEX_COHERE_MODEL env var (default: command-a-03-2025).
 // NOTE: Cohere is NOT OpenAI-shaped — the v2 response nests content as an ARRAY of blocks
 // (message.content[].text), so it needs this dedicated parser, not the generic openai-compat wrapper.
 import https from "node:https";
@@ -36,7 +36,7 @@ if (!prompt.trim()) {
   process.exit(1);
 }
 
-const model = process.env.GAVEL_COHERE_MODEL || "command-a-03-2025";
+const model = process.env.DEX_COHERE_MODEL || "command-a-03-2025";
 
 const body = JSON.stringify({
   model,

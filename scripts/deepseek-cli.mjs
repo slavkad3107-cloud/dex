@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Thin CLI wrapper for DeepSeek API — designed to be called by gavel.mjs as a provider.
+// Thin CLI wrapper for DeepSeek API — called by dex as a provider.
 // Usage:
 //   deepseek-cli.mjs --version        → print version
 //   deepseek-cli.mjs                  → read prompt from stdin, print response to stdout
 // Auth: DEEPSEEK_API_KEY env var.
-// Model: GAVEL_DEEPSEEK_MODEL env var (default: deepseek-chat).
+// Model: DEX_DEEPSEEK_MODEL env var (default: deepseek-chat).
 import https from "node:https";
 
 const VERSION = "1.0.0";
@@ -34,7 +34,7 @@ if (!prompt.trim()) {
   process.exit(1);
 }
 
-const model = process.env.GAVEL_DEEPSEEK_MODEL || "deepseek-chat";
+const model = process.env.DEX_DEEPSEEK_MODEL || "deepseek-chat";
 
 const body = JSON.stringify({
   model,

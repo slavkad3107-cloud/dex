@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "dex",
-  "owner": { "name": "sdushnikovich-sketch" },
+  "owner": { "name": "slavkad3107-cloud" },
   "plugins": [
     {
       "name": "dex",

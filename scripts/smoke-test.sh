@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Deterministic smoke tests for gavel's runner. Makes real Codex/Gemini calls, so both should be
-# authenticated (run /gavel:setup first); tests for an unusable provider are skipped. Exits non-zero
+# Deterministic smoke tests for dex runner. Makes real Codex/Gemini calls, so both should be
+
 # on any failure. Usage: bash scripts/smoke-test.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-GAVEL="$ROOT/scripts/gavel.mjs"
+GAVEL="$ROOT/scripts/dex.mjs"
 pass=0; fail=0
 ok()  { echo "PASS: $1"; pass=$((pass + 1)); }
 bad() { echo "FAIL: $1"; fail=$((fail + 1)); }
@@ -29,11 +29,11 @@ else
 fi
 
 # 2. injection: shell metacharacters in a prompt file must NOT execute
-rm -f /tmp/GAVEL_INJ_1 /tmp/GAVEL_INJ_2
-D="$(mktemp -d)"; printf '%s' 'literal, do not run: $(touch /tmp/GAVEL_INJ_1) `touch /tmp/GAVEL_INJ_2`' > "$D/p.txt"
+rm -f /tmp/DEX_INJ_1 /tmp/DEX_INJ_2
+D="$(mktemp -d)"; printf '%s' 'literal, do not run: $(touch /tmp/DEX_INJ_1) `touch /tmp/DEX_INJ_2`' > "$D/p.txt"
 [ "$CODEX_USABLE" = "true" ] && node "$GAVEL" run --provider codex --cwd "$D" --prompt-file "$D/p.txt" --timeout 120 >/dev/null 2>&1
-if [ -e /tmp/GAVEL_INJ_1 ] || [ -e /tmp/GAVEL_INJ_2 ]; then bad "prompt metacharacters did not execute"; else ok "prompt metacharacters did not execute"; fi
-rm -f /tmp/GAVEL_INJ_1 /tmp/GAVEL_INJ_2; rm -rf "$D"
+if [ -e /tmp/DEX_INJ_1 ] || [ -e /tmp/DEX_INJ_2 ]; then bad "prompt metacharacters did not execute"; else ok "prompt metacharacters did not execute"; fi
+rm -f /tmp/DEX_INJ_1 /tmp/DEX_INJ_2; rm -rf "$D"
 
 # 3. read-only: advisors must not create files in the project dir
 if [ "$CODEX_USABLE" = "true" ]; then
@@ -57,30 +57,30 @@ if [ "$GEMINI_USABLE" = "true" ]; then
 fi
 
 # 5. disabled provider is skipped, not reported 'missing'
-D="$(mktemp -d)"; printf '%s' '{"providers":{"codex":{"enabled":false}}}' > "$D/.gavel.json"
+D="$(mktemp -d)"; printf '%s' '{"providers":{"codex":{"enabled":false}}}' > "$D/.dex.json"
 GR="$(node "$GAVEL" setup --cwd "$D" --json)"
 EN="$(printf '%s' "$GR" | get providers.codex.enabled)"; MISS="$(printf '%s' "$GR" | get missingProviders)"
 { [ "$EN" = "false" ] && ! printf '%s' "$MISS" | grep -q codex; } && ok "disabled provider skipped (not 'missing')" || bad "disabled provider skipped (enabled=$EN missing=$MISS)"
 rm -rf "$D"
 
 # 6. readiness reflects the resolved panel (panel naming only a disabled provider -> not ready)
-D="$(mktemp -d)"; printf '%s' '{"panel":["gemini"],"providers":{"gemini":{"enabled":false}}}' > "$D/.gavel.json"
+D="$(mktemp -d)"; printf '%s' '{"panel":["gemini"],"providers":{"gemini":{"enabled":false}}}' > "$D/.dex.json"
 RD="$(node "$GAVEL" setup --cwd "$D" --json | get ready)"
 [ "$RD" = "false" ] && ok "empty-panel => ready:false (no false-positive dead-end)" || bad "panel readiness (ready=$RD)"
 rm -rf "$D"
 
 # 7. run refuses a config-disabled provider (no fake execution)
-D="$(mktemp -d)"; printf '%s' '{"providers":{"codex":{"enabled":false}}}' > "$D/.gavel.json"
+D="$(mktemp -d)"; printf '%s' '{"providers":{"codex":{"enabled":false}}}' > "$D/.dex.json"
 if node "$GAVEL" run --provider codex --cwd "$D" --prompt "hi" >/dev/null 2>&1; then bad "disabled provider rejected by run"; else ok "disabled provider rejected by run"; fi
 rm -rf "$D"
 
 # 8. malformed config is surfaced, not silently fail-open
-D="$(mktemp -d)"; printf '%s' '{"providers":{"codex":{"enabled":false},}}' > "$D/.gavel.json"
+D="$(mktemp -d)"; printf '%s' '{"providers":{"codex":{"enabled":false},}}' > "$D/.dex.json"
 case "$(node "$GAVEL" setup --cwd "$D" --json | get configErrors)" in *invalid*) ok "malformed config surfaced";; *) bad "malformed config surfaced";; esac
 rm -rf "$D"
 
 # 9. non-positive timeout is clamped to the default
-D="$(mktemp -d)"; printf '%s' '{"timeout":-5}' > "$D/.gavel.json"
+D="$(mktemp -d)"; printf '%s' '{"timeout":-5}' > "$D/.dex.json"
 TS="$(node "$GAVEL" setup --cwd "$D" --json | get timeoutSeconds)"
 [ "$TS" = "1800" ] && ok "negative timeout clamped to default" || bad "timeout clamp (got $TS)"
 rm -rf "$D"
