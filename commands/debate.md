@@ -1,5 +1,5 @@
 ---
-description: Multi-round debate — R0 blind draft → R1 independent → R2 anon critique (always) → R3 conditional → R4 Claude verdict.
+description: Multi-round debate — R0 blind draft → R1 independent → R2 anon critique → R3 anon critique → R4 Claude verdict. All rounds always run.
 argument-hint: "<task or question>"
 ---
 
@@ -7,15 +7,13 @@ You are running a **multi-round debate** for this request. You (the Claude Code 
 **panelist, judge, and actor**. The advisor models are **read-only** — only you write to the
 workspace or run side-effecting commands.
 
-**Fixed pipeline:**
+**Fixed pipeline (all rounds always run):**
 - **R0** — Claude blind draft (before panel sees anything)
 - **R1** — Panel answers independently (голый вопрос, no cross-reading)
-- **R2** — Panel gets R0+R1 anonymized → critique + devil's advocate + refine *(always runs)*
-- Convergence check only after R2
-- **R3** — Panel gets R0+R1+R2 anonymized → critique + refine *(conditional: only if substantive disagreement remains after R2)*
-- **R4** — Claude judge receives all anonymous results → synthesis → final verdict *(always)*
+- **R2** — Panel gets R0+R1 anonymized → critique + devil's advocate + refine
+- **R3** — Panel gets R0+R1+R2 anonymized → second critique + refine
+- **R4** — Claude judge receives all anonymous results → synthesis → final verdict
 
-Hard cap: never more than R3 on the panel side — past that, models drift into agreeing just to agree.
 All rounds use **anonymized labels (Эксперт А / Б / В …)** throughout — nobody ever knows which answer
 belongs to which model, including Claude's own draft.
 
@@ -70,27 +68,20 @@ Build a new prompt file in this order:
 Run `dex.mjs fuse --json --prompt-file …` on this file. Meanwhile, **refine your own draft** using
 the same three-step instruction (as a panelist). Parse the refined answers.
 
-## Convergence check (after R2 only — never after R1)
+## R3 — Second anonymized critique + refine (always runs)
 
-Compare all R2 answers (including your refined draft). Does **substantive** disagreement remain?
-— i.e. different conclusions / conflicting factual claims on the *core* question (NOT mere wording).
-- **No substantive disagreement** → skip R3, go straight to R4.
-- **Substantive disagreement** → run R3.
-
-## R3 — Second anonymized critique + refine (conditional)
-
-If, and only if, the panel is still genuinely split after R2, build a new prompt file:
+Build a new prompt file:
 1. The original question.
-2. **All R0+R1+R2 answers ANONYMIZED** (А / Б / В …, same scheme, reassign letters fresh).
-3. This instruction (verbatim):
-   *«Выше — анонимные ответы экспертов, включая их уточнения из второго раунда. Суть разногласия:
-   <назови крux одним предложением>. Твоя задача:
-   (1) Критика: для каждого тезиса, с которым не согласен — `[тезис] → [ошибка] → [довод] → [исправление]`.
-   (2) Адвокат дьявола: атакуй консенсусную позицию.
-   (3) Финальный ответ: твоя окончательная позиция по ключевому разногласию. Максимально кратко.»*
+2. **All R0+R1+R2 answers ANONYMIZED** (А / Б / В …, reassign letters fresh).
+3. This instruction (verbatim — identical to R2):
+   *«Выше — анонимные ответы экспертов на вопрос. Твоя задача:
+   (1) Для КАЖДОГО заметного утверждения, с которым ты не согласен, дай критику строго в формате:
+   `[тезис] → [в чём ошибка] → [доказательство / довод] → [как исправить]`. Никаких «согласен, но…».
+   (2) Роль адвоката дьявола: укажи самое слабое место наиболее популярной / консенсусной позиции
+   и попробуй её опровергнуть — даже если в целом согласен.
+   (3) Выдай свой УТОЧНЁННЫЙ ответ на исходный вопрос. Кратко и по делу.»*
 
 Run `dex.mjs fuse --json --prompt-file …` once more. Parse.
-**Never go past R3** on the panel side — report unresolved split instead of adding more rounds.
 
 ## Verify load-bearing facts (before R4, if applicable)
 
@@ -133,5 +124,5 @@ for any checked claim. Then:
   agreed-with / diverged-from, changed across rounds. Your own row on equal footing, never omitted.
 - **Debate arc** — how positions moved across rounds, where they converged, any crux that stayed unresolved,
   where your own view shifted and why.
-- **Rounds ran:** state which rounds ran (R0–R1–R2 always; R3 conditional).
+- **Rounds ran:** R0–R1–R2–R3–R4 always (all mandatory).
 - Delete all temp draft and prompt files, then take the appropriate action (edits / commands / answer).

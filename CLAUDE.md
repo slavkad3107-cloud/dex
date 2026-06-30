@@ -36,9 +36,8 @@ contribution is the in-process draft, so there is intentionally **no "claude" pr
 Fixed 4-phase pipeline, orchestrated entirely Claude-side (each round = another `dex.mjs fuse --json`
 call). **R0**: Claude blind draft (before panel). **R1**: panel answers independently (голый вопрос,
 no cross-reading). **R2** *(always)*: panel receives R0+R1 anonymized (А/Б/В…) → critique + devil's
-advocate + refine. Convergence judged **only after R2**. **R3** *(conditional)*: if substantive
-disagreement remains, panel receives R0+R1+R2 anonymized → second critique + refine; hard cap, never
-more. **R4** *(always)*: Claude judge collects all anonymous results → dex-synthesis → coherence pass
+advocate + refine. Convergence judged **only after R2**. **R3** *(always)*: panel receives R0+R1+R2 anonymized → same critique + devil's advocate + refine
+(identical instruction to R2). **R4** *(always)*: Claude judge collects all anonymous results → dex-synthesis → coherence pass
 → adversarial self-check → cross-family audit → final verdict. All rounds keep anonymized labels
 throughout. Cost grows ~super-linearly per round; best run on the **cloud panel** — local CPU models
 make rounds too slow.
