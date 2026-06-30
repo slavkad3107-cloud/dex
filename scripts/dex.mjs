@@ -193,7 +193,7 @@ const PROVIDERS = {
     bin: "node", bundled: true,
     tested: "1.0.0",
     isolation: "isolated",
-    defaultModel: "command-a-03-2025",
+    defaultModel: "command-r7b-12-2024",
     modelEnv: "DEX_COHERE_MODEL",
     installHint: "bundled — set COHERE_API_KEY to enable (dashboard.cohere.com)",
     authHint: "set COHERE_API_KEY environment variable",
