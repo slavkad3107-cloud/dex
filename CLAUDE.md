@@ -35,8 +35,8 @@ contribution is the in-process draft, so there is intentionally **no "claude" pr
 ## How debate works (`/dex:debate`)
 A multi-round extension of fuse, orchestrated entirely Claude-side (no runner change — each round is
 just another `dex.mjs fuse --json` call with a constructed prompt). Round 0: Claude's blind draft.
-Round 1: independent answers. Round 2: each advisor receives **all** Round-1 answers (labeled,
-including Claude's draft) and is asked to critique & refine. Claude then judges convergence; a **3rd
+Round 1: independent answers. Round 2: **always runs** — each advisor receives all Round-1 answers
+(anonymized) and is asked to critique & refine. Convergence is judged **only after Round 2**; a **3rd
 round fires only if substantive disagreement remains** (hard cap at 3 — beyond that, gains vanish and
 models converge sycophantically). Claude synthesizes the final round per `dex-synthesis` and reports
 the debate arc. Efficiency note: R1→R2 yields most of the gain; R2→R3 pays off only when genuinely

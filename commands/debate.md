@@ -1,13 +1,13 @@
 ---
-description: Multi-round debate — models answer, then critique & refine each other; Claude judges. 2 rounds + a conditional 3rd.
+description: Multi-round debate — models answer, then critique & refine each other; Claude judges. Always 2 rounds minimum + a conditional 3rd.
 argument-hint: "<task or question>"
 ---
 
 You are running a **multi-round debate** for this request. You (the Claude Code model) are
 **panelist, the judge, and the actor**. The advisor models are **read-only** — only you write to the
-workspace or run side-effecting commands. The debate runs **2 rounds, plus a 3rd only if substantive
-disagreement remains** (hard cap: never more than 3 rounds — past that, gains vanish and models drift
-into agreeing just to agree).
+workspace or run side-effecting commands. The debate **always runs at least 2 rounds** (Round 1 + Round 2), no matter how similar the Round-1
+answers look. Convergence is judged only **after Round 2** to decide whether a 3rd round is needed
+(hard cap: never more than 3 rounds — past that, gains vanish and models drift into agreeing just to agree).
 
 The task / question:
 $ARGUMENTS
@@ -55,8 +55,7 @@ verdict (`high` needs stable agreement; instability pushes a claim toward `tenta
 Run `dex.mjs fuse --json --prompt-file …` again on this file. Meanwhile, **refine your own draft**
 the same way (as a panelist). Parse the refined answers.
 
-**Judge for convergence.** Compare the Round-2 answers (incl. your refined view). Decide whether
-**substantive** disagreement remains — i.e. different conclusions/recommendations or conflicting
+**Judge for convergence (after Round 2 — never after Round 1).** Compare the Round-2 answers (incl. your refined view). Decide whether **substantive** disagreement remains — i.e. different conclusions/recommendations or conflicting
 factual claims on the *core* question (NOT mere wording/emphasis).
 
 **Round 3 — conditional final statements (only if substantive disagreement remains).** If, and only
