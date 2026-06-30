@@ -49,7 +49,7 @@ optional **self-consistency** (`fuse --samples N` — an internally-unstable voi
 high-specificity-consensus, or **lone-wolf** claims; compute computable ones directly); **per-claim
 aggregation** (mix best fragment per claim) + coherence pass; **cross-family synthesis audit** (a
 non-Claude voice flags dropped critiques / unsupported synthesis claims — catches judge-as-aggregator
-errors self-check can't); **calibrated confidence labels** (verified/high/tentative/contested/unknown,
+errors self-check can't); **calibrated confidence labels** (подтверждено/высокая/предположительно/спорно/неизвестно,
 abstain on unknown). Measurement lives in `~/.dex/eval-set.json` (run it to MEASURE, not estimate).
 
 ## Read-only is a per-provider capability (`PROVIDERS[name].isolation`)

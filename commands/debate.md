@@ -104,11 +104,11 @@ hallucination). Each objection must quote the specific panel text as evidence, e
 every surviving objection in one final pass — accept it, or reject with a stated reason. Only then:
 - Give the **fused conclusion**.
 - **Tag each load-bearing claim with a calibrated confidence label** by explicit rule, not gut feel:
-  `verified` (confirmed by the fact-check step), `high` (agreed by ≥2 decorrelated families with no
-  unresolved objection), `tentative` (agreed but thinly sourced or with minor doubt), `contested`
-  (panel still split after all rounds → present BOTH positions, don't pick silently), `unknown` (no
+  `подтверждено` (confirmed by the fact-check step), `высокая` (agreed by ≥2 decorrelated families with no
+  unresolved objection), `предположительно` (agreed but thinly sourced or with minor doubt), `спорно`
+  (panel still split after all rounds → present BOTH positions, don't pick silently), `неизвестно` (no
   reliable basis → **abstain**: say so and offer to find a source, do NOT fabricate). An honest
-  `contested`/`unknown` beats a confidently-wrong claim — that's the costliest error for an
+  `спорно`/`неизвестно` beats a confidently-wrong claim — that's the costliest error for an
   accuracy-first user.
 - Show a **per-panelist verdict table** covering **every** participant **including yourself** — one row
   each, columns: final position (1 line), confidence, agreed-with / diverged-from, and whether it
