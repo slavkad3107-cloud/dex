@@ -33,15 +33,15 @@ writes** to the workspace. The runner (`dex.mjs fuse`) only queries Codex + Gemi
 contribution is the in-process draft, so there is intentionally **no "claude" provider**.
 
 ## How debate works (`/dex:debate`)
-A multi-round extension of fuse, orchestrated entirely Claude-side (no runner change — each round is
-just another `dex.mjs fuse --json` call with a constructed prompt). Round 0: Claude's blind draft.
-Round 1: independent answers. Round 2: **always runs** — each advisor receives all Round-1 answers
-(anonymized) and is asked to critique & refine. Convergence is judged **only after Round 2**; a **3rd
-round fires only if substantive disagreement remains** (hard cap at 3 — beyond that, gains vanish and
-models converge sycophantically). Claude synthesizes the final round per `dex-synthesis` and reports
-the debate arc. Efficiency note: R1→R2 yields most of the gain; R2→R3 pays off only when genuinely
-split; cost grows ~super-linearly per round (each round re-sends accumulated answers). Best run on the
-**cloud panel** — local CPU models make rounds too slow.
+Fixed 4-phase pipeline, orchestrated entirely Claude-side (each round = another `dex.mjs fuse --json`
+call). **R0**: Claude blind draft (before panel). **R1**: panel answers independently (голый вопрос,
+no cross-reading). **R2** *(always)*: panel receives R0+R1 anonymized (А/Б/В…) → critique + devil's
+advocate + refine. Convergence judged **only after R2**. **R3** *(conditional)*: if substantive
+disagreement remains, panel receives R0+R1+R2 anonymized → second critique + refine; hard cap, never
+more. **R4** *(always)*: Claude judge collects all anonymous results → dex-synthesis → coherence pass
+→ adversarial self-check → cross-family audit → final verdict. All rounds keep anonymized labels
+throughout. Cost grows ~super-linearly per round; best run on the **cloud panel** — local CPU models
+make rounds too slow.
 
 Accuracy layers added by a 3-cycle self-optimization loop (each closes a distinct measured error class):
 optional **self-consistency** (`fuse --samples N` — an internally-unstable voice self-demotes);
