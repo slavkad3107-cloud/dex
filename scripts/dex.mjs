@@ -258,6 +258,32 @@ const PROVIDERS = {
       return { ok: true, text };
     },
   },
+
+  "gemini-api": {
+    bin: "node", bundled: true,
+    tested: "1.0.0",
+    isolation: "isolated",
+    defaultModel: "gemini-2.0-flash",
+    modelEnv: "DEX_GEMINI_API_MODEL",
+    installHint: "bundled — set GEMINI_API_KEY to enable (aistudio.google.com, free tier)",
+    authHint: "set GEMINI_API_KEY environment variable",
+    checkAuth() {
+      if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)
+        return { authed: true, via: "env (GEMINI_API_KEY)" };
+      return { authed: false, via: null };
+    },
+    async run({ prompt, model, cwd, timeoutMs, env }) {
+      const runEnv = { ...env };
+      if (model) runEnv.DEX_GEMINI_API_MODEL = model;
+      const r = await runCommand(process.execPath.includes(" ") ? `"${process.execPath}"` : process.execPath, [path.join(SCRIPTS_DIR, "gemini-api-cli.mjs")], { cwd, timeoutMs, input: prompt, env: runEnv });
+      if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
+      if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
+      if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `gemini-api exited with code ${r.code}` };
+      const text = (r.stdout || "").trim();
+      if (!text) return { ok: false, error: "gemini-api returned no output" };
+      return { ok: true, text };
+    },
+  },
 };
 
 // --- OpenAI-compatible cloud providers -------------------------------------
