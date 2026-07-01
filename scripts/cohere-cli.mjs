@@ -36,7 +36,11 @@ if (!prompt.trim()) {
   process.exit(1);
 }
 
-const model = process.env.DEX_COHERE_MODEL || "command-a-03-2025";
+const model = process.env.DEX_COHERE_MODEL || "command-r7b-12-2024";
+
+// Cohere's CDN (Cloudflare) rate-limits rapid sequential requests with 403.
+// A short random jitter avoids triggering the burst detector.
+await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
 
 const body = JSON.stringify({
   model,
