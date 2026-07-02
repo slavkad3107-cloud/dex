@@ -4,7 +4,10 @@
 //   cohere-cli.mjs --version        → print version
 //   cohere-cli.mjs                  → read prompt from stdin, print response to stdout
 // Auth: COHERE_API_KEY env var (free trial key at dashboard.cohere.com).
-// Model: DEX_COHERE_MODEL env var (default: command-a-03-2025).
+// Model: DEX_COHERE_MODEL env var (default: command-r7b-12-2024).
+// NOTE: api.cohere.com is CDN/geo-blocked from some regions (e.g. RU) — returns a 403 HTML
+// page (not a JSON error) even on GET /v1/models. That is not a key/rate-limit issue; it
+// needs a proxy/VPN from an allowed region. Kept out of the default panel for that reason.
 // NOTE: Cohere is NOT OpenAI-shaped — the v2 response nests content as an ARRAY of blocks
 // (message.content[].text), so it needs this dedicated parser, not the generic openai-compat wrapper.
 import https from "node:https";
@@ -37,10 +40,6 @@ if (!prompt.trim()) {
 }
 
 const model = process.env.DEX_COHERE_MODEL || "command-r7b-12-2024";
-
-// Cohere's CDN (Cloudflare) rate-limits rapid sequential requests with 403.
-// A short random jitter avoids triggering the burst detector.
-await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
 
 const body = JSON.stringify({
   model,
