@@ -1,6 +1,6 @@
 {
   "name": "dex",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "dex — a Claude-as-judge ensemble for accurate answers. Claude answers first, consults free/local advisor models, then always runs a multi-round debate (/dex = /dex:debate; auto mode IS debate) with anonymous critique, devil's advocate + external verification, and machine-evaluates itself (/dex:eval). Naive majority-vote (fuse) is disabled — measured worst.",
   "author": { "name": "slavkad3107" },
   "homepage": "https://github.com/slavkad3107-cloud/dex",

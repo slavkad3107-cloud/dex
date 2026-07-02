@@ -77,6 +77,9 @@ let status, data;
 for (let attempt = 0; attempt < 3; attempt++) {
   ({ status, data } = await once());
   if (status !== 429 && status !== 503) break;
+  // A 429 that reports a hard free-tier "limit: 0" will never recover on retry
+  // (the key simply has no free quota) — fail fast instead of wasting ~7s of backoff.
+  if (status === 429 && /"limit":\s*0\b/.test(data || "")) break;
   if (attempt < 2) await sleep(3000 * (attempt + 1) + Math.random() * 1000);
 }
 

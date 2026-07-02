@@ -505,11 +505,15 @@ const FAST_PROVIDERS = new Set(["groq", "cerebras", "ghmodels", "or-llama", "or-
 const FAST_TIMEOUT_S = 30;
 
 function resolveTimeoutMs(opts, config, providerName) {
-  // Explicit flag / env / config always wins. Otherwise use per-provider fast default for cloud APIs.
-  const explicit = Number(opts.timeout) || Number(process.env.DEX_TIMEOUT) || config.timeout;
-  if (explicit > 0) return explicit * 1000;
-  if (providerName && FAST_PROVIDERS.has(providerName)) return FAST_TIMEOUT_S * 1000;
-  return DEFAULT_TIMEOUT_S * 1000;
+  // An explicit CLI flag / env var is a hard override — it wins for every provider.
+  const override = Number(opts.timeout) || Number(process.env.DEX_TIMEOUT);
+  if (override > 0) return override * 1000;
+  // Otherwise `config.timeout` is a CEILING (mainly for slow local models), NOT a floor: fast cloud
+  // APIs still get the short fast-cap so one hung provider can't stall a whole round for minutes.
+  // (Before this, config.timeout=360 silently defeated the 30s fast-cap → Promise.all waited ~6min.)
+  const ceiling = config.timeout > 0 ? config.timeout : DEFAULT_TIMEOUT_S;
+  if (providerName && FAST_PROVIDERS.has(providerName)) return Math.min(FAST_TIMEOUT_S, ceiling) * 1000;
+  return ceiling * 1000;
 }
 
 function warnConfigErrors(config) {
