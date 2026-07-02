@@ -350,7 +350,6 @@ const OPENROUTER_MODELS = {
   "or-nemotron": "nvidia/nemotron-3-ultra-550b-a55b:free",
   "or-gptoss":   "openai/gpt-oss-120b:free",
   "or-coder":    "qwen/qwen3-coder:free",
-  "or-cohere":   "cohere/command-r7b-12-2024",
 };
 for (const [slug, model] of Object.entries(OPENROUTER_MODELS)) {
   PROVIDERS[slug] = makeOpenAiProvider({

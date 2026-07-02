@@ -1,44 +1,34 @@
 ---
-description: Auto-router — cheapest path first (1 strong voice), escalate to fuse then debate only if confidence is low. Best accuracy per effort.
+description: Auto mode — IS the full debate. Always runs the complete /dex:debate pipeline (R0→R4). No cost cascade, no early stop.
 argument-hint: "<task or question>"
 ---
 
-You are running **dex:auto** — a cost-aware cascade. Spend model effort only when the answer is
-uncertain. You (Claude) are panelist + judge + actor. Escalate through the stages below and **STOP at
-the first stage that yields a confident answer**, then act. Get prompts to models via a temp file +
-`--prompt-file --json` (never inline in the shell).
+You are running **dex:auto**. In this plugin **auto mode == debate**: there is no cheap-probe
+cascade and no early stop — every question gets the full multi-round debate. (The old cost-cascade
+was retired: naive fuse measured worst, and a "confident" single voice is exactly where hidden errors
+hide. Always debate.)
 
 The task / question:
 $ARGUMENTS
 
-If the task is empty, ask what to route, then stop.
+If the task is empty, ask what to debate, then stop.
 
-**Stage 1 — cheap probe (your draft + one strong voice).** Form your own answer first. Then query the
-single strongest reliable voice with self-consistency (3 samples):
+**Do this: run the complete `/dex:debate` pipeline on the task above** — identical behavior to invoking
+`/dex:debate` directly. Follow `commands/debate.md` exactly:
 
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" run --provider cerebras --cwd "$(pwd)" --prompt-file /tmp/dex-auto.txt
-```
+- **R0** — Claude blind draft (before the panel sees anything), written to a temp file.
+- **R1** — panel answers independently (голый вопрос, no cross-reading) via
+  `node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" fuse --cwd "$(pwd)" --json --prompt-file <file>`.
+- **R2** *(always)* — panel receives R0+R1 anonymized (Эксперт А/Б/В…) → critique + devil's advocate + refine.
+- **R3** *(always)* — panel receives R0+R1+R2 anonymized → same instruction as R2.
+- **R4** *(always)* — Claude judge collects all anonymous results → dex-synthesis → coherence pass →
+  adversarial self-check → cross-family audit → final verdict with calibrated confidence label
+  (подтверждено / высокая / предположительно / спорно / неизвестно).
 
-(Run it ~3× — or use `fuse --samples 3` limited to one provider — to gauge stability.) **STOP here and
-answer (confidence `high`)** if ALL hold: your draft and the voice agree, the voice is self-consistent
-across samples, and there's no high-stakes *checkable* fact. Otherwise → Stage 2.
+**Provider hygiene (every round):** parse the JSON array `{provider, model, ok, text, error}`.
+Keep only `ok:true` answers; **any provider that fails or times out (e.g. cohere 403 geo-block,
+gemini quota) is silently excluded from that round** — never block the debate waiting on it, never
+count a missing voice. Note which providers dropped in the final report.
 
-**Stage 2 — panel (full panel, 1 round, JUDGE-synthesized — NOT a majority vote).** Query the whole
-panel once (the `fuse` subcommand is just the parallel-query transport — naive majority/ENSEMBLE is
-disabled because it measured worst, letting weak voices outvote the strong one):
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" fuse --cwd "$(pwd)" --json --prompt-file /tmp/dex-auto.txt
-```
-
-Synthesize by **reasoning quality, not vote count** — a single well-argued/verified answer outranks a
-majority of weak ones. **STOP and answer** if ≥2 decorrelated families agree and no load-bearing fact
-is disputed. If answers **diverge**, a load-bearing fact is **disputed**, or it's a **tie** → Stage 3.
-
-**Stage 3 — debate (full pipeline).** Run the complete `/dex:debate` flow (blind structured critique
-+ devil's advocate → claim-local verification + lone-wolf routing → calibrated verdict + synthesis
-audit). Reserve this for genuinely hard/contested questions — it's ~2.5–5× the cost of fuse.
-
-**Report which stage resolved it** (1/2/3) and why, so the user sees the effort spent — then take the
-appropriate action. The point of `auto` is to reach Stage 3 only when the question actually warrants it.
+**Always report the plugin version** (`.claude-plugin/plugin.json`) and the list of participating vs
+excluded providers at the end, so the user sees exactly which panel produced the verdict.

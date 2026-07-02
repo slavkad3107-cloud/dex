@@ -47,29 +47,44 @@ const body = JSON.stringify({
   stream: false,
 });
 
-const { status, data } = await new Promise((resolve, reject) => {
-  const req = https.request(
-    {
-      hostname: "api.cohere.com",
-      path: "/v2/chat",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Length": Buffer.byteLength(body),
+function once() {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "api.cohere.com",
+        path: "/v2/chat",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Length": Buffer.byteLength(body),
+        },
       },
-    },
-    (res) => {
-      let d = "";
-      res.on("data", (c) => { d += c; });
-      res.on("end", () => resolve({ status: res.statusCode, data: d }));
-    }
-  );
-  req.on("error", reject);
-  req.write(body);
-  req.end();
-});
+      (res) => {
+        let d = "";
+        res.on("data", (c) => { d += c; });
+        res.on("end", () => resolve({ status: res.statusCode, data: d }));
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Small jitter to avoid CDN burst-403, then up to 2 retries on transient 429/503.
+// A geo-block (403 HTML from RU) or hard-blocked key is NOT retried — it fails fast
+// and the caller simply excludes cohere from that debate round (ok:false).
+await sleep(500 + Math.random() * 1500);
+let status, data;
+for (let attempt = 0; attempt < 3; attempt++) {
+  ({ status, data } = await once());
+  if (status !== 429 && status !== 503) break;
+  if (attempt < 2) await sleep(3000 * (attempt + 1) + Math.random() * 1000);
+}
 
 if (status !== 200) {
   process.stderr.write(`Cohere API error (HTTP ${status}): ${data}\n`);

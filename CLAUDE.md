@@ -5,11 +5,13 @@ Claude Code plugin — a **Claude-as-judge ensemble** for accurate answers. Clau
 with **external verification** (WebSearch/compute), and **machine-evaluates** itself (`/dex:eval`).
 Naive majority-vote (fuse) is **disabled** — measured worst. Local CLIs only; synchronous (no background jobs).
 
-`/dex` = `/dex:debate` (default, always full pipeline). `/dex:auto` is **disabled** — debate is always run.
+`/dex` = `/dex:debate` (default, always full pipeline). **`/dex:auto` == debate** — auto mode runs the
+identical full debate pipeline (R0→R4), no cost cascade, no early stop. Any provider that fails/times
+out in a round (e.g. cohere 403 geo-block, gemini quota) is silently excluded from that round.
 
 ## Layout
 - `commands/` — slash commands (`dex`, `debate`, `ask`, `eval`, `setup`, `config`, `optimize`); thin Claude-side wrappers.
-  - **`debate` is the default** (`/dex` = `/dex:debate`): full multi-round pipeline always. `/dex:auto` is disabled.
+  - **`debate` is the default** (`/dex` = `/dex:debate`): full multi-round pipeline always. `/dex:auto` runs the same debate pipeline (auto == debate).
   - `eval` = run the machine-scored eval harness (`scripts/eval.mjs`) and print a stratified scorecard.
   - **`fuse` (standalone 1-round naive synthesis) and the naive-majority ENSEMBLE are DISABLED** (`commands/fuse.md.disabled`): measured WORST in both regimes (78% easy, **38% hard** — weak voices outvote the strong one, dropping below a single good model and below Claude-alone). The panel is still queried in parallel by `auto`/`debate` via the `dex.mjs fuse` **runner**, but answers are **judge-synthesized (quality-weighted) + verified**, never majority-voted.
 - `scripts/dex.mjs` — zero-dependency Node runner: a **provider registry** + config layer.
