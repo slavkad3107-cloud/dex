@@ -43,27 +43,42 @@ const body = JSON.stringify({
 
 const path = `/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-const { status, data } = await new Promise((resolve, reject) => {
-  const req = https.request(
-    {
-      hostname: "generativelanguage.googleapis.com",
-      path,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(body),
+function once() {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "generativelanguage.googleapis.com",
+        path,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
       },
-    },
-    (res) => {
-      let d = "";
-      res.on("data", (c) => { d += c; });
-      res.on("end", () => resolve({ status: res.statusCode, data: d }));
-    }
-  );
-  req.on("error", reject);
-  req.write(body);
-  req.end();
-});
+      (res) => {
+        let d = "";
+        res.on("data", (c) => { d += c; });
+        res.on("end", () => resolve({ status: res.statusCode, data: d }));
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Small jitter to avoid burst rate-limits, then up to 2 retries on transient
+// 429/503. A hard-blocked key (free-tier limit:0) still fails → provider is
+// simply excluded from the debate by the caller (ok:false).
+await sleep(500 + Math.random() * 1500);
+let status, data;
+for (let attempt = 0; attempt < 3; attempt++) {
+  ({ status, data } = await once());
+  if (status !== 429 && status !== 503) break;
+  if (attempt < 2) await sleep(3000 * (attempt + 1) + Math.random() * 1000);
+}
 
 if (status !== 200) {
   process.stderr.write(`Gemini API error (HTTP ${status}): ${data}\n`);
