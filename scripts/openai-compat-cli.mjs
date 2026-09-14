@@ -1,25 +1,30 @@
 #!/usr/bin/env node
 // Generic OpenAI-compatible chat client — one wrapper for any provider exposing a
-// `/chat/completions` endpoint (Groq, OpenRouter, Cerebras, GitHub Models, …). dex calls it
-// through a per-provider shim that hard-codes the flags below; the prompt arrives on stdin.
+// `/chat/completions` endpoint (Groq, OpenRouter, Cerebras, Mistral, Z.ai, Cloudflare, LM Studio, …).
+// dex calls it with the flags below; the prompt arrives on stdin.
 //
 // TRANSPORT: uses `curl`, not node's https. Some Cloudflare-fronted APIs (Groq, Cerebras) block
 // node's TLS fingerprint with HTTP 403 while curl passes. curl ships with Windows 10+/macOS/Linux.
 // The API key goes in a temp header file (never argv, so it can't leak via the process list).
 //
-// Flags (set by the shim):
+// Flags (set by dex.mjs):
 //   --provider <name>        label used in error messages
 //   --base <url>             full chat-completions endpoint URL
 //   --key-env <ENVVAR>       name of the env var holding the API key
+//   --no-key                 keyless local server (LM Studio) — no Authorization header
 //   --model-env <ENVVAR>     name of the env var that may override the model
 //   --default-model <model>  model used when --model-env is unset
 //   --version                print version and exit (used by dex install probe)
+// Env:
+//   DEX_EXTRA_BODY           JSON object merged into the request body (e.g. Z.ai
+//                            {"thinking":{"type":"disabled"}}). Passed via env, not argv, because
+//                            the runner spawns through a shell that would mangle JSON quoting.
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 
 function flag(name) {
   const i = process.argv.indexOf(`--${name}`);
@@ -34,16 +39,17 @@ if (process.argv.includes("--version") || process.argv.includes("-v")) {
 const provider = flag("provider") || "openai-compat";
 const base = flag("base");
 const keyEnv = flag("key-env");
+const noKey = process.argv.includes("--no-key");
 const modelEnv = flag("model-env");
 const defaultModel = flag("default-model");
 
-if (!base || !keyEnv) {
+if (!base || (!keyEnv && !noKey)) {
   process.stderr.write(`${provider}: misconfigured wrapper (missing --base/--key-env).\n`);
   process.exit(1);
 }
 
-const apiKey = process.env[keyEnv];
-if (!apiKey) {
+const apiKey = noKey ? "" : process.env[keyEnv];
+if (!noKey && !apiKey) {
   process.stderr.write(`${keyEnv} is not set. Export it to authenticate ${provider}.\n`);
   process.exit(1);
 }
@@ -67,10 +73,20 @@ if (!model) {
   process.exit(1);
 }
 
+let extra = {};
+if (process.env.DEX_EXTRA_BODY) {
+  try { extra = JSON.parse(process.env.DEX_EXTRA_BODY) || {}; }
+  catch (e) {
+    process.stderr.write(`${provider}: DEX_EXTRA_BODY is not valid JSON (${e.message}).\n`);
+    process.exit(1);
+  }
+}
+
 const body = JSON.stringify({
   model,
   messages: [{ role: "user", content: prompt.trim() }],
   stream: false,
+  ...extra,
 });
 
 // Body + auth header live in temp files: body has no secret; the header file holds the key and is
@@ -87,7 +103,7 @@ function curlOnce() {
       "-sS", "-X", "POST", base,
       "-H", "Content-Type: application/json",
       "-H", "Accept: application/json",
-      "-H", `@${hdrFile}`,
+      ...(apiKey ? ["-H", `@${hdrFile}`] : []),
       "--data-binary", `@${bodyFile}`,
       "-w", "\n%{http_code}",
       "--max-time", "120",
@@ -109,7 +125,7 @@ function curlOnce() {
 let status, data, err;
 try {
   fs.writeFileSync(bodyFile, body);
-  fs.writeFileSync(hdrFile, `Authorization: Bearer ${apiKey}\n`);
+  if (apiKey) fs.writeFileSync(hdrFile, `Authorization: Bearer ${apiKey}\n`);
 
   // Free models routinely return 429 (upstream rate limit) under parallel panel load. Retry a few
   // times, honoring the OpenRouter retry_after_seconds hint (capped), before giving up.

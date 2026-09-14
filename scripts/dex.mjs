@@ -290,7 +290,19 @@ const PROVIDERS = {
 // Groq, OpenRouter, Cerebras, GitHub Models all speak the OpenAI /chat/completions API, so they
 // share ONE wrapper (scripts/openai-compat-cli.mjs) behind per-provider bin shims that hard-code the
 // endpoint/key/model. Here we only need the key env (for auth + hints) and the model defaults.
-function makeOpenAiProvider({ bin, base, defaultModel, modelEnv, keyEnv, signupUrl, expectFree = false }) {
+function makeOpenAiProvider({ bin, base, defaultModel, modelEnv, keyEnv, signupUrl, expectFree = false,
+  paid = false, extraBody = null, accountEnv = null, keyless = false }) {
+  // accountEnv: the endpoint carries an account id in a `{account}` placeholder (Cloudflare Workers AI).
+  // The key env may hold "ACCOUNT_ID:TOKEN", or just the token with the id in `accountEnv`.
+  const credentials = () => {
+    const raw = process.env[keyEnv] || "";
+    if (!accountEnv) return { token: raw, account: "" };
+    const i = raw.indexOf(":");
+    return i > 0
+      ? { account: raw.slice(0, i), token: raw.slice(i + 1) }
+      : { account: process.env[accountEnv] || "", token: raw };
+  };
+  const needs = accountEnv ? `${keyEnv} + ${accountEnv}` : keyEnv;
   return {
     bin: "node", bundled: true,
     tested: "1.0.0",
@@ -301,28 +313,47 @@ function makeOpenAiProvider({ bin, base, defaultModel, modelEnv, keyEnv, signupU
     // refuses any model without the `:free` suffix (override with DEX_ALLOW_PAID=1) so a mistaken
     // config edit can never silently route to a paid model. setup also warns about it.
     expectFree,
-    installHint: `bundled — set ${keyEnv} to enable (${signupUrl})`,
-    authHint: `set ${keyEnv} environment variable`,
+    // paid: a pay-per-token API. Refused unless DEX_ALLOW_PAID=1, so a key that happens to sit in the
+    // env is never billed just because the provider landed in a panel.
+    paid,
+    installHint: keyless ? `bundled — start the local server (${signupUrl})` : `bundled — set ${needs} to enable (${signupUrl})`,
+    authHint: keyless ? `no key needed — ensure the local server is running (${signupUrl})` : `set ${needs}`,
     checkAuth() {
-      if (process.env[keyEnv]) return { authed: true, via: `env (${keyEnv})` };
-      return { authed: false, via: null };
+      if (keyless) return { authed: true, via: "local (no key needed)" };
+      const { token, account } = credentials();
+      if (!token || (accountEnv && !account)) return { authed: false, via: null };
+      return { authed: true, via: `env (${accountEnv ? `${keyEnv}+${accountEnv}` : keyEnv})` };
     },
     async run({ prompt, model, cwd, timeoutMs, env }) {
       if (expectFree && model && !model.includes(":free") && !process.env.DEX_ALLOW_PAID) {
         return { ok: false, error: `refusing to call "${model}" — not a :free model (money guard). Append ":free", or set DEX_ALLOW_PAID=1 to allow paid models.` };
       }
+      if (paid && !process.env.DEX_ALLOW_PAID) {
+        return { ok: false, error: `refusing to call paid provider ${bin} "${model || defaultModel}" (money guard) — set DEX_ALLOW_PAID=1 to allow paid APIs.` };
+      }
       const runEnv = { ...env };
       if (model) runEnv[modelEnv] = model;
+      // JSON goes through env, not argv: the runner spawns via a shell that would mangle its quoting.
+      if (extraBody) runEnv.DEX_EXTRA_BODY = JSON.stringify(extraBody);
+      let url = base, effectiveKeyEnv = keyEnv;
+      if (accountEnv) {
+        const { token, account } = credentials();
+        url = base.replace("{account}", encodeURIComponent(account));
+        runEnv.DEX_ACCOUNT_TOKEN = token;
+        effectiveKeyEnv = "DEX_ACCOUNT_TOKEN";
+      }
       const scriptArgs = [
         path.join(SCRIPTS_DIR, "openai-compat-cli.mjs"),
-        "--provider", bin, "--base", base,
-        "--key-env", keyEnv, "--model-env", modelEnv, "--default-model", defaultModel,
+        "--provider", bin, "--base", url,
+        ...(keyless ? ["--no-key"] : ["--key-env", effectiveKeyEnv]),
+        "--model-env", modelEnv, "--default-model", defaultModel,
       ];
       const r = await runCommand(process.execPath.includes(" ") ? `"${process.execPath}"` : process.execPath, scriptArgs, { cwd, timeoutMs, input: prompt, env: runEnv });
       if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
       if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
       if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `${bin} exited with code ${r.code}` };
-      const text = (r.stdout || "").trim();
+      // Reasoning models (Groq qwen3.6, GLM, Nemotron…) may inline <think>…</think> — keep only the answer.
+      const text = stripThink(r.stdout || "");
       if (!text) return { ok: false, error: `${bin} returned no output` };
       return { ok: true, text };
     },
@@ -330,7 +361,9 @@ function makeOpenAiProvider({ bin, base, defaultModel, modelEnv, keyEnv, signupU
 }
 
 const OPENAI_COMPAT = [
-  { bin: "groq",     base: "https://api.groq.com/openai/v1/chat/completions",              defaultModel: "llama-3.3-70b-versatile", modelEnv: "DEX_GROQ_MODEL",     keyEnv: "GROQ_API_KEY",     signupUrl: "console.groq.com" },
+  // Groq retired llama-3.3-70b-versatile (HTTP 404, verified 2026-09-14) → default is now Qwen 3.8 27B
+  // (a different family from the gpt-oss voices; same model as the explicit `groq-qwen38` slug).
+  { bin: "groq",     base: "https://api.groq.com/openai/v1/chat/completions",              defaultModel: "qwen/qwen3.8-27b",        modelEnv: "DEX_GROQ_MODEL",     keyEnv: "GROQ_API_KEY",     signupUrl: "console.groq.com" },
   { bin: "cerebras", base: "https://api.cerebras.ai/v1/chat/completions",                  defaultModel: "gpt-oss-120b",            modelEnv: "DEX_CEREBRAS_MODEL", keyEnv: "CEREBRAS_API_KEY", signupUrl: "cloud.cerebras.ai" },
   { bin: "ghmodels", base: "https://models.inference.ai.azure.com/chat/completions",       defaultModel: "gpt-4o-mini",             modelEnv: "DEX_GHMODELS_MODEL", keyEnv: "GITHUB_TOKEN",     signupUrl: "github.com/marketplace/models" },
 ];
@@ -350,6 +383,18 @@ const OPENROUTER_MODELS = {
   "or-nemotron": "nvidia/nemotron-3-ultra-550b-a55b:free",
   "or-gptoss":   "openai/gpt-oss-120b:free",
   "or-coder":    "qwen/qwen3-coder:free",
+  // From ЭКО.DOC's live OpenRouter list (Sep 2026). Skipped on purpose: nemotron-3.5-content-safety
+  // (a safety classifier, not an answerer), lyria-3-* (music generation), and the paid ids
+  // (deepseek-chat / llama-3.3-70b-instruct / gpt-4o-mini — covered by their direct providers).
+  "or-nemotron-super":     "nvidia/nemotron-3-super-120b-a12b:free",
+  "or-nemotron-lightning": "nvidia/nemotron-3.5-lightning:free",
+  "or-nemotron-nano":      "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "or-gemma-26b":          "google/gemma-4-26b-a4b-it:free",
+  "or-inkling":            "thinkingmachines/inkling:free",
+  "or-inkling-small":      "thinkingmachines/inkling-small:free",
+  "or-dots":               "dots-studio/dots-3-note-preview:free",
+  "or-ling":               "inclusionai/ling-3.0-flash-vl:free",
+  "or-nex":                "nex-agi/nex-n2.5-mini:free",
 };
 for (const [slug, model] of Object.entries(OPENROUTER_MODELS)) {
   PROVIDERS[slug] = makeOpenAiProvider({
@@ -357,6 +402,130 @@ for (const [slug, model] of Object.entries(OPENROUTER_MODELS)) {
     defaultModel: model, modelEnv: "DEX_OPENROUTER_MODEL",
     keyEnv: "OPENROUTER_API_KEY", signupUrl: "openrouter.ai", expectFree: true,
   });
+}
+
+// --- models mirrored from ЭКО.DOC ------------------------------------------
+// ЭКО.DOC (C:\Users\veter\ЭкоДок, ecodoc/ai/registry.py + detect.py KNOWN_MODELS, Sep 2026) keeps a
+// measured catalogue of free/paid models. Each gets its OWN slug here so it can sit in a panel alone.
+// Registry ≠ panel: nothing below joins the debate until listed in `panel`. Paid families are
+// money-guarded (DEX_ALLOW_PAID=1). Anthropic is deliberately absent: Claude is already the judge.
+const COMPAT_FAMILIES = [
+  // Mistral free tier = ministral-14b/8b/3b + codestral (small/medium/magistral: 0 req/min;
+  // large: 403 tier_not_allowed). From RU without VPN; free-tier prompts may train Mistral models.
+  { bin: "mistral", base: "https://api.mistral.ai/v1/chat/completions", modelEnv: "DEX_MISTRAL_MODEL",
+    keyEnv: "MISTRAL_API_KEY", signupUrl: "console.mistral.ai",
+    models: { "ministral-14b": "ministral-14b-latest", "ministral-8b": "ministral-8b-latest",
+      "ministral-3b": "ministral-3b-latest", codestral: "codestral-latest", "mistral-large": "mistral-large-latest" } },
+  { bin: "groq", base: "https://api.groq.com/openai/v1/chat/completions", modelEnv: "DEX_GROQ_MODEL",
+    keyEnv: "GROQ_API_KEY", signupUrl: "console.groq.com",
+    models: { "groq-gptoss": "openai/gpt-oss-120b", "groq-gptoss-20b": "openai/gpt-oss-20b",
+      "groq-qwen38": "qwen/qwen3.8-27b", "groq-qwen36": "qwen/qwen3.6-27b" } },
+  { bin: "cerebras", base: "https://api.cerebras.ai/v1/chat/completions", modelEnv: "DEX_CEREBRAS_MODEL",
+    keyEnv: "CEREBRAS_API_KEY", signupUrl: "cloud.cerebras.ai",
+    models: { "cerebras-qwen": "qwen-3.8-27b", "cerebras-gemma": "gemma-4-31b" } },
+  // Z.ai (Zhipu) GLM flash models: free, from RU without VPN, 1 concurrent request. Thinking is on by
+  // default — disabled (ЭКО.DOC measured 2.7 s vs 11.4 s at equal quality).
+  { bin: "zai", base: "https://api.z.ai/api/paas/v4/chat/completions", modelEnv: "DEX_ZAI_MODEL",
+    keyEnv: "ZAI_API_KEY", signupUrl: "z.ai", extraBody: { thinking: { type: "disabled" } },
+    models: { "zai-glm47": "glm-4.7-flash", "zai-glm45": "glm-4.5-flash", "zai-glm46v": "glm-4.6v-flash" } },
+  // Cloudflare Workers AI: 10 000 neurons/day free (~60 gpt-oss-120b calls); over the cap it refuses,
+  // never bills. Needs a Workers-AI token + account id.
+  { bin: "cloudflare", base: "https://api.cloudflare.com/client/v4/accounts/{account}/ai/v1/chat/completions",
+    modelEnv: "DEX_CLOUDFLARE_MODEL", keyEnv: "CLOUDFLARE_API_TOKEN", accountEnv: "CLOUDFLARE_ACCOUNT_ID",
+    signupUrl: "dash.cloudflare.com",
+    models: { "cf-gptoss": "@cf/openai/gpt-oss-120b", "cf-gptoss-20b": "@cf/openai/gpt-oss-20b",
+      "cf-llama": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "cf-kimi": "@cf/moonshotai/kimi-k2.7-code" } },
+  { bin: "lmstudio", base: "http://localhost:1234/v1/chat/completions", modelEnv: "DEX_LMSTUDIO_MODEL",
+    keyEnv: "LMSTUDIO_API_KEY", signupUrl: "LM Studio server on :1234", keyless: true,
+    models: { lmstudio: "local-model" } },
+  // --- paid (money-guarded) ---
+  { bin: "openai", base: "https://api.openai.com/v1/chat/completions", modelEnv: "DEX_OPENAI_MODEL",
+    keyEnv: "OPENAI_API_KEY", signupUrl: "platform.openai.com", paid: true,
+    models: { openai: "gpt-4o-mini", "openai-4o": "gpt-4o", "openai-41mini": "gpt-4.1-mini", "openai-o3mini": "o3-mini" } },
+  { bin: "moonshot", base: "https://api.moonshot.ai/v1/chat/completions", modelEnv: "DEX_MOONSHOT_MODEL",
+    keyEnv: "MOONSHOT_API_KEY", signupUrl: "platform.moonshot.ai", paid: true,
+    models: { moonshot: "kimi-k2-0905-preview", "moonshot-v1": "moonshot-v1-32k" } },
+  { bin: "xai", base: "https://api.x.ai/v1/chat/completions", modelEnv: "DEX_XAI_MODEL",
+    keyEnv: "XAI_API_KEY", signupUrl: "console.x.ai", paid: true,
+    models: { xai: "grok-2-latest" } },
+  { bin: "together", base: "https://api.together.xyz/v1/chat/completions", modelEnv: "DEX_TOGETHER_MODEL",
+    keyEnv: "TOGETHER_API_KEY", signupUrl: "api.together.ai", paid: true,
+    models: { together: "meta-llama/Llama-3.3-70B-Instruct-Turbo", "together-qwen": "Qwen/Qwen2.5-72B-Instruct-Turbo" } },
+  { bin: "vsegpt", base: "https://api.vsegpt.ru/v1/chat/completions", modelEnv: "DEX_VSEGPT_MODEL",
+    keyEnv: "VSEGPT_API_KEY", signupUrl: "vsegpt.ru", paid: true,
+    models: { vsegpt: "openai/gpt-4o-mini", "vsegpt-deepseek": "deepseek/deepseek-chat" } },
+  { bin: "proxyapi", base: "https://api.proxyapi.ru/openai/v1/chat/completions", modelEnv: "DEX_PROXYAPI_MODEL",
+    keyEnv: "PROXYAPI_API_KEY", signupUrl: "proxyapi.ru", paid: true,
+    models: { proxyapi: "gpt-4o-mini", "proxyapi-4o": "gpt-4o" } },
+];
+for (const { models, ...family } of COMPAT_FAMILIES) {
+  for (const [slug, model] of Object.entries(models)) {
+    PROVIDERS[slug] = makeOpenAiProvider({ ...family, defaultModel: model });
+  }
+}
+
+// Model variants that reuse an existing bundled wrapper (cohere/gemini-api/deepseek) or a non-OpenAI API
+// (GigaChat OAuth, YandexGPT): the wrapper reads its model from `modelEnv`, so each variant is just a
+// different default model under its own slug.
+function makeCliVariant({ family, script, keyEnvs, alsoEnvs = [], modelEnv, defaultModel, signupUrl, paid = false }) {
+  const needs = [keyEnvs[0], ...alsoEnvs].join(" + ");
+  return {
+    bin: "node", bundled: true,
+    tested: "1.0.0",
+    isolation: "isolated",
+    defaultModel,
+    modelEnv,
+    paid,
+    installHint: `bundled — set ${needs} to enable (${signupUrl})`,
+    authHint: `set ${needs}`,
+    checkAuth() {
+      const k = keyEnvs.find((e) => process.env[e]);
+      if (!k || alsoEnvs.some((e) => !process.env[e])) return { authed: false, via: null };
+      return { authed: true, via: `env (${[k, ...alsoEnvs].join("+")})` };
+    },
+    async run({ prompt, model, cwd, timeoutMs, env }) {
+      if (paid && !process.env.DEX_ALLOW_PAID) {
+        return { ok: false, error: `refusing to call paid provider ${family} "${model || defaultModel}" (money guard) — set DEX_ALLOW_PAID=1 to allow paid APIs.` };
+      }
+      const runEnv = { ...env };
+      if (model) runEnv[modelEnv] = model;
+      const nodeBin = process.execPath.includes(" ") ? `"${process.execPath}"` : process.execPath;
+      const r = await runCommand(nodeBin, [path.join(SCRIPTS_DIR, script)], { cwd, timeoutMs, input: prompt, env: runEnv });
+      if (r.spawnError) return { ok: false, error: `cannot start node — ${r.spawnError}` };
+      if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
+      if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `${family} exited with code ${r.code}` };
+      const text = stripThink(r.stdout || "");
+      if (!text) return { ok: false, error: `${family} returned no output` };
+      return { ok: true, text };
+    },
+  };
+}
+
+const CLI_VARIANTS = [
+  // Cohere trial key: 20 req/min, 1000/month, NON-commercial; api.cohere.com is geo-blocked from RU.
+  { family: "cohere", script: "cohere-cli.mjs", keyEnvs: ["COHERE_API_KEY"], modelEnv: "DEX_COHERE_MODEL",
+    signupUrl: "dashboard.cohere.com",
+    models: { "cohere-a": "command-a-03-2025", "cohere-a-plus": "command-a-plus-05-2026",
+      "cohere-r": "command-r-08-2024", "cohere-r-plus": "command-r-plus-08-2024" } },
+  // Gemini free tier: ~15 req/min, 1500/day; from RU answers "User location is not supported".
+  { family: "gemini-api", script: "gemini-api-cli.mjs", keyEnvs: ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+    modelEnv: "DEX_GEMINI_API_MODEL", signupUrl: "aistudio.google.com",
+    models: { "gemini-flash": "gemini-flash-latest", "gemini-25-flash": "gemini-2.5-flash" } },
+  { family: "deepseek", script: "deepseek-cli.mjs", keyEnvs: ["DEEPSEEK_API_KEY"], modelEnv: "DEX_DEEPSEEK_MODEL",
+    signupUrl: "platform.deepseek.com",
+    models: { "deepseek-reasoner": "deepseek-reasoner" } },
+  // --- paid (money-guarded) ---
+  { family: "gigachat", script: "gigachat-cli.mjs", keyEnvs: ["GIGACHAT_AUTH_KEY"], modelEnv: "DEX_GIGACHAT_MODEL",
+    signupUrl: "developers.sber.ru/studio", paid: true,
+    models: { gigachat: "GigaChat", "gigachat-pro": "GigaChat-Pro", "gigachat-max": "GigaChat-Max" } },
+  { family: "yandexgpt", script: "yandexgpt-cli.mjs", keyEnvs: ["YANDEX_API_KEY"], alsoEnvs: ["YANDEX_FOLDER_ID"],
+    modelEnv: "DEX_YANDEX_MODEL", signupUrl: "console.yandex.cloud", paid: true,
+    models: { "yandexgpt-lite": "yandexgpt-lite/latest", yandexgpt: "yandexgpt/latest" } },
+];
+for (const { models, ...variant } of CLI_VARIANTS) {
+  for (const [slug, model] of Object.entries(models)) {
+    PROVIDERS[slug] = makeCliVariant({ ...variant, defaultModel: model });
+  }
 }
 
 // --- local Ollama models ---------------------------------------------------
@@ -441,6 +610,26 @@ for (const [slug, tag] of Object.entries(OLLAMA_MODELS)) {
   PROVIDERS[slug] = makeOllamaProvider(tag);
 }
 
+// Ollama Cloud (ollama.com): cloud models served THROUGH the local Ollama (after `ollama signin`) on the
+// same /api/generate as local ones — but computed on ollama.com, so the prompt LEAVES this machine.
+// Free weekly quota, 1 concurrent request (several oc-* in one parallel round will queue/refuse).
+// Separate `oc-` slugs so they're never mistaken for the private local models above.
+const OLLAMA_CLOUD_MODELS = {
+  "oc-gptoss":         "gpt-oss:120b-cloud",
+  "oc-gptoss-20b":     "gpt-oss:20b-cloud",
+  "oc-gemma":          "gemma4:31b-cloud",
+  "oc-nemotron-super": "nemotron-3-super:cloud",
+  "oc-nemotron-nano":  "nemotron-3-nano:30b-cloud",
+  "oc-nemotron-ultra": "nemotron-3-ultra:cloud",
+};
+for (const [slug, tag] of Object.entries(OLLAMA_CLOUD_MODELS)) {
+  PROVIDERS[slug] = {
+    ...makeOllamaProvider(tag),
+    installHint: `install Ollama (ollama.com), run \`ollama signin\`, then \`ollama pull ${tag}\` (a tiny cloud tag)`,
+    authHint: `no key — Ollama must be signed in to ollama.com (\`ollama signin\`); data leaves this machine`,
+  };
+}
+
 const PROVIDER_NAMES = Object.keys(PROVIDERS);
 
 // --- config / settings -----------------------------------------------------
@@ -501,7 +690,13 @@ function resolvePanel(config) {
 // Per-provider fast-timeout defaults: cloud APIs that typically respond in <5s shouldn't block
 // debate/auto rounds for 3 minutes if they hang — a 30s cap surfaces the error quickly.
 const FAST_PROVIDERS = new Set(["groq", "cerebras", "ghmodels", "or-llama", "or-qwen", "or-gemma",
-  "or-nemotron", "or-gptoss", "or-coder", "mistral", "cohere"]);
+  "or-nemotron", "or-gptoss", "or-coder", "mistral", "cohere",
+  // mirrored from ЭКО.DOC — measured fast there (slow ones like Nemotron Ultra/Super keep the ceiling)
+  "ministral-14b", "ministral-8b", "ministral-3b", "codestral", "mistral-large",
+  "groq-gptoss", "groq-gptoss-20b", "groq-qwen38", "groq-qwen36", "cerebras-qwen", "cerebras-gemma",
+  "zai-glm47", "zai-glm45", "zai-glm46v", "cf-gptoss", "cf-gptoss-20b", "cf-llama", "cf-kimi",
+  "cohere-a", "cohere-a-plus", "cohere-r", "cohere-r-plus", "gemini-flash", "gemini-25-flash",
+  "oc-gptoss", "oc-gemma"]);
 const FAST_TIMEOUT_S = 30;
 
 function resolveTimeoutMs(opts, config, providerName) {

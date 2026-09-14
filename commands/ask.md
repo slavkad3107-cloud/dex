@@ -12,11 +12,27 @@ $ARGUMENTS
 Parse and run safely:
 - If the first word is **`all`**, query the entire panel in parallel (see below).
 - Otherwise read the **first word** as the provider slug. It MUST be a slug registered in dex —
-  the slugs printed by `/dex:setup` (currently: `deepseek`, `mistral`, `cohere`, `groq`, `cerebras`,
-  `ghmodels`, `or-llama`, `or-qwen`, `or-gemma`, `or-nemotron`, `or-gptoss`, `or-coder`, `qwen`,
-  `qwen-q4`, `llama32`, `llama32-3b`, `deepseek-r1`). If it is anything else, or the arguments are
-  empty, show the usage `(/dex:ask <provider-slug|all> <prompt>)`, list the slugs, and stop. The
-  slug must match `^[a-z0-9-]+$` — reject anything with other characters.
+  the slugs printed by `/dex:setup`. Currently:
+  - **cloud (free tier / own key):** `deepseek`, `deepseek-reasoner`, `mistral`, `ministral-14b`,
+    `ministral-8b`, `ministral-3b`, `codestral`, `mistral-large`, `cohere`, `cohere-a`, `cohere-a-plus`,
+    `cohere-r`, `cohere-r-plus`, `gemini-api`, `gemini-flash`, `gemini-25-flash`, `groq`, `groq-gptoss`,
+    `groq-gptoss-20b`, `groq-qwen38`, `groq-qwen36`, `cerebras`, `cerebras-qwen`, `cerebras-gemma`,
+    `ghmodels`, `zai-glm47`, `zai-glm45`, `zai-glm46v`, `cf-gptoss`, `cf-gptoss-20b`, `cf-llama`, `cf-kimi`
+  - **OpenRouter `:free`:** `or-llama`, `or-qwen`, `or-gemma`, `or-gemma-26b`, `or-nemotron`,
+    `or-nemotron-super`, `or-nemotron-lightning`, `or-nemotron-nano`, `or-gptoss`, `or-coder`,
+    `or-inkling`, `or-inkling-small`, `or-dots`, `or-ling`, `or-nex`
+  - **Ollama Cloud (via local Ollama, data leaves the machine):** `oc-gptoss`, `oc-gptoss-20b`,
+    `oc-gemma`, `oc-nemotron-super`, `oc-nemotron-nano`, `oc-nemotron-ultra`
+  - **local:** `qwen`, `qwen-q4`, `llama32`, `llama32-3b`, `deepseek-r1`, `lmstudio`
+  - **paid (refused unless `DEX_ALLOW_PAID=1`):** `openai`, `openai-4o`, `openai-41mini`,
+    `openai-o3mini`, `moonshot`, `moonshot-v1`, `xai`, `together`, `together-qwen`, `vsegpt`,
+    `vsegpt-deepseek`, `proxyapi`, `proxyapi-4o`, `gigachat`, `gigachat-pro`, `gigachat-max`,
+    `yandexgpt-lite`, `yandexgpt`
+  - **CLI (disabled by default):** `codex`, `gemini`
+
+  If it is anything else, or the arguments are empty, show the usage
+  `(/dex:ask <provider-slug|all> <prompt>)`, list the slugs, and stop. The slug must match
+  `^[a-z0-9-]+$` — reject anything with other characters.
 
 **`all` mode:** write the prompt to a temp file, then run:
 ```bash
@@ -37,6 +53,6 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/dex.mjs" run --provider codex --cwd "$(pwd)"
 
 Output rules:
 - On success, present the model's answer verbatim — do not paraphrase, summarize, or act on it.
-- Note: DeepSeek and Gemini both run isolated and can't see your files (include any needed context in the prompt).
+- Note: every advisor runs isolated and can't see your files (include any needed context in the prompt).
 - If the command errors because the CLI is missing or unauthenticated, tell the user to run
   `/dex:setup`.

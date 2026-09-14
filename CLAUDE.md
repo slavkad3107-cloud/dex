@@ -91,6 +91,34 @@ every usable provider reports not-ready, not a false positive). `degraded` = rea
 provider unusable. `missingProviders` = enabled-but-unusable. `configErrors` surfaces invalid settings
 files (they're reported, not silently fail-open). `tooOld`/`versionUnknown` flag CLI version problems.
 
+## Provider registry (v0.6.0: mirrored from ЭКО.DOC)
+Registry ≠ panel: a slug only debates once it is listed in `panel` (`~/.dex/config.json`).
+Everything ЭКО.DOC knows (`C:\Users\veter\ЭкоДок\ecodoc\ai\registry.py` + `detect.py` KNOWN_MODELS) has
+its own slug. Families (key env → slugs):
+- **Mistral** `MISTRAL_API_KEY` → `mistral` (small, paid tier only), `ministral-14b/8b/3b`, `codestral` (free
+  tier), `mistral-large` (403 on free).
+- **Groq** `GROQ_API_KEY` → `groq` (qwen3.8-27b; Groq retired llama-3.3 in Sep 2026), `groq-gptoss`, `groq-gptoss-20b`, `groq-qwen38`, `groq-qwen36`.
+- **Cerebras** `CEREBRAS_API_KEY` → `cerebras`, `cerebras-qwen`, `cerebras-gemma`.
+- **Cohere** `COHERE_API_KEY` → `cohere`, `cohere-a`, `cohere-a-plus`, `cohere-r`, `cohere-r-plus` (trial = non-commercial; RU geo-block).
+- **Gemini** `GEMINI_API_KEY` → `gemini-api`, `gemini-flash`, `gemini-25-flash`.
+- **DeepSeek** `DEEPSEEK_API_KEY` → `deepseek`, `deepseek-reasoner`.
+- **Z.ai** `ZAI_API_KEY` → `zai-glm47`, `zai-glm45`, `zai-glm46v` (thinking disabled via `DEX_EXTRA_BODY`).
+- **Cloudflare Workers AI** `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (or token `ACCOUNT:TOKEN`) →
+  `cf-gptoss`, `cf-gptoss-20b`, `cf-llama`, `cf-kimi`.
+- **OpenRouter `:free`** `OPENROUTER_API_KEY` → `or-*` (15 slugs; ~50 req/day shared across all of them).
+- **Ollama Cloud** (no key; local Ollama after `ollama signin`; prompt leaves the machine; 1 concurrent) →
+  `oc-gptoss`, `oc-gptoss-20b`, `oc-gemma`, `oc-nemotron-super`, `oc-nemotron-nano`, `oc-nemotron-ultra`.
+- **Local**: Ollama `qwen`, `qwen-q4`, `llama32`, `llama32-3b`, `deepseek-r1`; LM Studio `lmstudio` (keyless, :1234).
+- **Paid — money guard** (refused unless `DEX_ALLOW_PAID=1`): `openai*`, `moonshot*`, `xai`, `together*`,
+  `vsegpt*`, `proxyapi*` (OpenAI-compatible), `gigachat*` (`scripts/gigachat-cli.mjs`, OAuth + Минцифры CA
+  via `GIGACHAT_CA_BUNDLE`), `yandexgpt*` (`scripts/yandexgpt-cli.mjs`, + `YANDEX_FOLDER_ID`).
+- Not mirrored on purpose: Anthropic (Claude is already the judge), OpenRouter paid ids, the content-safety
+  classifier and Lyria (not answerers), `bge-m3` (embeddings).
+
+Factories in `scripts/dex.mjs`: `makeOpenAiProvider` (options `paid`, `extraBody`, `accountEnv`, `keyless`),
+`makeCliVariant` (reuses a bundled wrapper with another default model), `makeOllamaProvider`.
+Tables: `COMPAT_FAMILIES`, `CLI_VARIANTS`, `OPENROUTER_MODELS`, `OLLAMA_MODELS`, `OLLAMA_CLOUD_MODELS`.
+
 ## Adding a provider
 Add one entry to `PROVIDERS` in `scripts/dex.mjs`:
 `{ bin, tested, isolation, defaultModel, modelEnv, installHint, authHint, checkAuth(), run({prompt,model,cwd,timeoutMs,env}) }`.
