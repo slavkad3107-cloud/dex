@@ -98,14 +98,16 @@ its own slug. Families (key env → slugs):
 - **Mistral** `MISTRAL_API_KEY` → `mistral` (small, paid tier only), `ministral-14b/8b/3b`, `codestral` (free
   tier), `mistral-large` (403 on free).
 - **Groq** `GROQ_API_KEY` → `groq` (qwen3.8-27b; Groq retired llama-3.3 in Sep 2026), `groq-gptoss`, `groq-gptoss-20b`, `groq-qwen38`, `groq-qwen36`.
-- **Cerebras** `CEREBRAS_API_KEY` → `cerebras`, `cerebras-qwen`, `cerebras-gemma`.
+- **Cerebras** `CEREBRAS_API_KEY` → `cerebras`, `cerebras-qwen` (free access answers 402 since Sep 2026).
 - **Cohere** `COHERE_API_KEY` → `cohere`, `cohere-a`, `cohere-a-plus`, `cohere-r`, `cohere-r-plus` (trial = non-commercial; RU geo-block).
-- **Gemini** `GEMINI_API_KEY` → `gemini-api`, `gemini-flash`, `gemini-25-flash`.
+- **Gemini** `GEMINI_API_KEY` → `gemini-api` (gemini-3.6-flash), `gemini-flash`, `gemini-36-flash` (RU: location-blocked, VPN only).
 - **DeepSeek** `DEEPSEEK_API_KEY` → `deepseek`, `deepseek-reasoner`.
 - **Z.ai** `ZAI_API_KEY` → `zai-glm47`, `zai-glm45`, `zai-glm46v` (thinking disabled via `DEX_EXTRA_BODY`).
 - **Cloudflare Workers AI** `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (or token `ACCOUNT:TOKEN`) →
   `cf-gptoss`, `cf-gptoss-20b`, `cf-llama`, `cf-kimi`.
-- **OpenRouter `:free`** `OPENROUTER_API_KEY` → `or-*` (15 slugs; ~50 req/day shared across all of them).
+- **OpenRouter `:free`** `OPENROUTER_API_KEY` → `or-gemma`, `or-gemma-26b`, `or-nemotron`, `or-nemotron-super`,
+  `or-nemotron-lightning`, `or-dots`, `or-ling`, `or-nex` (~50 req/day shared). Free llama/
+  qwen/gpt-oss/coder variants were withdrawn by OpenRouter in Sep 2026; inkling is gated to agentic apps.
 - **Ollama Cloud** (no key; local Ollama after `ollama signin`; prompt leaves the machine; 1 concurrent) →
   `oc-gptoss`, `oc-gptoss-20b`, `oc-gemma`, `oc-nemotron-super`, `oc-nemotron-nano`, `oc-nemotron-ultra`.
 - **Local**: Ollama `qwen`, `qwen-q4`, `llama32`, `llama32-3b`, `deepseek-r1`; LM Studio `lmstudio` (keyless, :1234).

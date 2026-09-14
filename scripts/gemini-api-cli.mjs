@@ -34,7 +34,7 @@ if (!prompt.trim()) {
   process.exit(1);
 }
 
-const model = process.env.DEX_GEMINI_API_MODEL || "gemini-2.0-flash";
+const model = process.env.DEX_GEMINI_API_MODEL || "gemini-3.6-flash";
 
 const body = JSON.stringify({
   contents: [{ role: "user", parts: [{ text: prompt.trim() }] }],

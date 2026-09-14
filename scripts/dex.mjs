@@ -263,7 +263,10 @@ const PROVIDERS = {
     bin: "node", bundled: true,
     tested: "1.0.0",
     isolation: "isolated",
-    defaultModel: "gemini-2.0-flash",
+    // gemini-2.0-flash was retired (404 "no longer available", 2026-09-14); Google's own 404 text points
+    // to gemini-3.6-flash. NOTE: from RU every call (even the model list) answers "User location is not
+    // supported" — this voice only works through a VPN/proxy.
+    defaultModel: "gemini-3.6-flash",
     modelEnv: "DEX_GEMINI_API_MODEL",
     installHint: "bundled — set GEMINI_API_KEY to enable (aistudio.google.com, free tier)",
     authHint: "set GEMINI_API_KEY environment variable",
@@ -376,22 +379,18 @@ for (const c of OPENAI_COMPAT) PROVIDERS[c.bin] = makeOpenAiProvider(c);
 // money guard keeps any non-`:free` swap from being billed. NOTE: there is currently NO free *Gemini*
 // on OpenRouter — Google's only free model is **Gemma** (`or-gemma`); paid Gemini is blocked by the
 // money guard. Different families on purpose (Meta / Qwen / Google / Nvidia / OpenAI) for real debate.
+// 2026-09-14 live check: OpenRouter WITHDREW the free variants of llama-3.3-70b, qwen3-next-80b,
+// gpt-oss-120b and qwen3-coder (404 "unavailable for free") → or-llama/or-qwen/or-gptoss/or-coder removed.
+// thinkingmachines/inkling(-small):free are gated to "agentic harness" apps (403) → not mirrored.
 const OPENROUTER_MODELS = {
-  "or-llama":    "meta-llama/llama-3.3-70b-instruct:free",
-  "or-qwen":     "qwen/qwen3-next-80b-a3b-instruct:free",
   "or-gemma":    "google/gemma-4-31b-it:free",
   "or-nemotron": "nvidia/nemotron-3-ultra-550b-a55b:free",
-  "or-gptoss":   "openai/gpt-oss-120b:free",
-  "or-coder":    "qwen/qwen3-coder:free",
   // From ЭКО.DOC's live OpenRouter list (Sep 2026). Skipped on purpose: nemotron-3.5-content-safety
   // (a safety classifier, not an answerer), lyria-3-* (music generation), and the paid ids
   // (deepseek-chat / llama-3.3-70b-instruct / gpt-4o-mini — covered by their direct providers).
   "or-nemotron-super":     "nvidia/nemotron-3-super-120b-a12b:free",
   "or-nemotron-lightning": "nvidia/nemotron-3.5-lightning:free",
-  "or-nemotron-nano":      "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
   "or-gemma-26b":          "google/gemma-4-26b-a4b-it:free",
-  "or-inkling":            "thinkingmachines/inkling:free",
-  "or-inkling-small":      "thinkingmachines/inkling-small:free",
   "or-dots":               "dots-studio/dots-3-note-preview:free",
   "or-ling":               "inclusionai/ling-3.0-flash-vl:free",
   "or-nex":                "nex-agi/nex-n2.5-mini:free",
@@ -422,7 +421,8 @@ const COMPAT_FAMILIES = [
       "groq-qwen38": "qwen/qwen3.8-27b", "groq-qwen36": "qwen/qwen3.6-27b" } },
   { bin: "cerebras", base: "https://api.cerebras.ai/v1/chat/completions", modelEnv: "DEX_CEREBRAS_MODEL",
     keyEnv: "CEREBRAS_API_KEY", signupUrl: "cloud.cerebras.ai",
-    models: { "cerebras-qwen": "qwen-3.8-27b", "cerebras-gemma": "gemma-4-31b" } },
+    // gemma-4-31b is not served by Cerebras (404, 2026-09-14). Free Cerebras access currently answers 402.
+    models: { "cerebras-qwen": "qwen-3.8-27b" } },
   // Z.ai (Zhipu) GLM flash models: free, from RU without VPN, 1 concurrent request. Thinking is on by
   // default — disabled (ЭКО.DOC measured 2.7 s vs 11.4 s at equal quality).
   { bin: "zai", base: "https://api.z.ai/api/paas/v4/chat/completions", modelEnv: "DEX_ZAI_MODEL",
@@ -510,7 +510,8 @@ const CLI_VARIANTS = [
   // Gemini free tier: ~15 req/min, 1500/day; from RU answers "User location is not supported".
   { family: "gemini-api", script: "gemini-api-cli.mjs", keyEnvs: ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
     modelEnv: "DEX_GEMINI_API_MODEL", signupUrl: "aistudio.google.com",
-    models: { "gemini-flash": "gemini-flash-latest", "gemini-25-flash": "gemini-2.5-flash" } },
+    // gemini-2.5-flash is closed to new users (404) → gemini-3.6-flash, as Google's error message advises.
+    models: { "gemini-flash": "gemini-flash-latest", "gemini-36-flash": "gemini-3.6-flash" } },
   { family: "deepseek", script: "deepseek-cli.mjs", keyEnvs: ["DEEPSEEK_API_KEY"], modelEnv: "DEX_DEEPSEEK_MODEL",
     signupUrl: "platform.deepseek.com",
     models: { "deepseek-reasoner": "deepseek-reasoner" } },
@@ -552,9 +553,12 @@ function ollamaGenerate({ model, prompt, timeoutMs }) {
       const m = raw.replace(/^https?:\/\//, "").match(/^([^:]+)(?::(\d+))?/);
       if (m) { host = m[1] || host; if (m[2]) port = Number(m[2]); }
     }
-    const body = JSON.stringify({ model, prompt, stream: false });
+    // /api/chat, not /api/generate: Ollama 0.31 refuses /api/generate for chat-template-only models
+    // ("deepseek-r1:7b does not support generate", 2026-09-14). /api/chat works for every model and
+    // returns reasoning separately in message.thinking, so `content` is the clean answer.
+    const body = JSON.stringify({ model, messages: [{ role: "user", content: prompt }], stream: false });
     const req = http.request(
-      { host, port, path: "/api/generate", method: "POST",
+      { host, port, path: "/api/chat", method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } },
       (res) => {
         let data = "";
@@ -599,7 +603,7 @@ function makeOllamaProvider(modelTag) {
       if (r.status !== 200) return { ok: false, error: `ollama API HTTP ${r.status}: ${(r.data || "").slice(0, 200)}` };
       let parsed;
       try { parsed = JSON.parse(r.data); } catch { return { ok: false, error: "ollama API returned non-JSON" }; }
-      const text = stripThink(parsed?.response || "");
+      const text = stripThink(parsed?.message?.content ?? parsed?.response ?? "");
       if (!text) return { ok: false, error: parsed?.error || `ollama returned no output (is \`${m}\` pulled?)` };
       return { ok: true, text };
     },
@@ -689,13 +693,13 @@ function resolvePanel(config) {
 
 // Per-provider fast-timeout defaults: cloud APIs that typically respond in <5s shouldn't block
 // debate/auto rounds for 3 minutes if they hang — a 30s cap surfaces the error quickly.
-const FAST_PROVIDERS = new Set(["groq", "cerebras", "ghmodels", "or-llama", "or-qwen", "or-gemma",
-  "or-nemotron", "or-gptoss", "or-coder", "mistral", "cohere",
+// or-nemotron (Ultra 550B) is NOT here: it needs ~65 s per answer (2026-09-14), a 30 s cap would drop it.
+const FAST_PROVIDERS = new Set(["groq", "cerebras", "ghmodels", "or-gemma", "mistral", "cohere",
   // mirrored from ЭКО.DOC — measured fast there (slow ones like Nemotron Ultra/Super keep the ceiling)
   "ministral-14b", "ministral-8b", "ministral-3b", "codestral", "mistral-large",
-  "groq-gptoss", "groq-gptoss-20b", "groq-qwen38", "groq-qwen36", "cerebras-qwen", "cerebras-gemma",
+  "groq-gptoss", "groq-gptoss-20b", "groq-qwen38", "groq-qwen36", "cerebras-qwen",
   "zai-glm47", "zai-glm45", "zai-glm46v", "cf-gptoss", "cf-gptoss-20b", "cf-llama", "cf-kimi",
-  "cohere-a", "cohere-a-plus", "cohere-r", "cohere-r-plus", "gemini-flash", "gemini-25-flash",
+  "cohere-a", "cohere-a-plus", "cohere-r", "cohere-r-plus", "gemini-flash", "gemini-36-flash",
   "oc-gptoss", "oc-gemma"]);
 const FAST_TIMEOUT_S = 30;
 

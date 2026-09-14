@@ -15,12 +15,11 @@ Parse and run safely:
   the slugs printed by `/dex:setup`. Currently:
   - **cloud (free tier / own key):** `deepseek`, `deepseek-reasoner`, `mistral`, `ministral-14b`,
     `ministral-8b`, `ministral-3b`, `codestral`, `mistral-large`, `cohere`, `cohere-a`, `cohere-a-plus`,
-    `cohere-r`, `cohere-r-plus`, `gemini-api`, `gemini-flash`, `gemini-25-flash`, `groq`, `groq-gptoss`,
-    `groq-gptoss-20b`, `groq-qwen38`, `groq-qwen36`, `cerebras`, `cerebras-qwen`, `cerebras-gemma`,
+    `cohere-r`, `cohere-r-plus`, `gemini-api`, `gemini-flash`, `gemini-36-flash`, `groq`, `groq-gptoss`,
+    `groq-gptoss-20b`, `groq-qwen38`, `groq-qwen36`, `cerebras`, `cerebras-qwen`,
     `ghmodels`, `zai-glm47`, `zai-glm45`, `zai-glm46v`, `cf-gptoss`, `cf-gptoss-20b`, `cf-llama`, `cf-kimi`
-  - **OpenRouter `:free`:** `or-llama`, `or-qwen`, `or-gemma`, `or-gemma-26b`, `or-nemotron`,
-    `or-nemotron-super`, `or-nemotron-lightning`, `or-nemotron-nano`, `or-gptoss`, `or-coder`,
-    `or-inkling`, `or-inkling-small`, `or-dots`, `or-ling`, `or-nex`
+  - **OpenRouter `:free`:** `or-gemma`, `or-gemma-26b`, `or-nemotron`, `or-nemotron-super`,
+    `or-nemotron-lightning`, `or-dots`, `or-ling`, `or-nex`
   - **Ollama Cloud (via local Ollama, data leaves the machine):** `oc-gptoss`, `oc-gptoss-20b`,
     `oc-gemma`, `oc-nemotron-super`, `oc-nemotron-nano`, `oc-nemotron-ultra`
   - **local:** `qwen`, `qwen-q4`, `llama32`, `llama32-3b`, `deepseek-r1`, `lmstudio`
