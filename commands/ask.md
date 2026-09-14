@@ -17,7 +17,7 @@ Parse and run safely:
     `ministral-8b`, `ministral-3b`, `codestral`, `mistral-large`, `cohere`, `cohere-a`, `cohere-a-plus`,
     `cohere-r`, `cohere-r-plus`, `gemini-api`, `gemini-flash`, `gemini-36-flash`, `groq`, `groq-gptoss`,
     `groq-gptoss-20b`, `groq-qwen38`, `groq-qwen36`, `cerebras`, `cerebras-qwen`,
-    `ghmodels`, `zai-glm47`, `zai-glm45`, `zai-glm46v`, `cf-gptoss`, `cf-gptoss-20b`, `cf-llama`, `cf-kimi`
+    `ghmodels`, `zai-glm47`, `zai-glm45`, `zai-glm46v`, `cf-gptoss`, `cf-gptoss-20b`, `cf-llama`
   - **OpenRouter `:free`:** `or-gemma`, `or-gemma-26b`, `or-nemotron`, `or-nemotron-super`,
     `or-nemotron-lightning`, `or-dots`, `or-ling`, `or-nex`
   - **Ollama Cloud (via local Ollama, data leaves the machine):** `oc-gptoss`, `oc-gptoss-20b`,

@@ -434,7 +434,8 @@ const COMPAT_FAMILIES = [
     modelEnv: "DEX_CLOUDFLARE_MODEL", keyEnv: "CLOUDFLARE_API_TOKEN", accountEnv: "CLOUDFLARE_ACCOUNT_ID",
     signupUrl: "dash.cloudflare.com",
     models: { "cf-gptoss": "@cf/openai/gpt-oss-120b", "cf-gptoss-20b": "@cf/openai/gpt-oss-20b",
-      "cf-llama": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "cf-kimi": "@cf/moonshotai/kimi-k2.7-code" } },
+      // @cf/moonshotai/kimi-k2.7-code (in ЭКО.DOC's list) answers 403 "not available" (2026-09-14) → not mirrored.
+      "cf-llama": "@cf/meta/llama-3.3-70b-instruct-fp8-fast" } },
   { bin: "lmstudio", base: "http://localhost:1234/v1/chat/completions", modelEnv: "DEX_LMSTUDIO_MODEL",
     keyEnv: "LMSTUDIO_API_KEY", signupUrl: "LM Studio server on :1234", keyless: true,
     models: { lmstudio: "local-model" } },
@@ -698,7 +699,7 @@ const FAST_PROVIDERS = new Set(["groq", "cerebras", "ghmodels", "or-gemma", "mis
   // mirrored from ЭКО.DOC — measured fast there (slow ones like Nemotron Ultra/Super keep the ceiling)
   "ministral-14b", "ministral-8b", "ministral-3b", "codestral", "mistral-large",
   "groq-gptoss", "groq-gptoss-20b", "groq-qwen38", "groq-qwen36", "cerebras-qwen",
-  "zai-glm47", "zai-glm45", "zai-glm46v", "cf-gptoss", "cf-gptoss-20b", "cf-llama", "cf-kimi",
+  "zai-glm47", "zai-glm45", "zai-glm46v", "cf-gptoss", "cf-gptoss-20b", "cf-llama",
   "cohere-a", "cohere-a-plus", "cohere-r", "cohere-r-plus", "gemini-flash", "gemini-36-flash",
   "oc-gptoss", "oc-gemma"]);
 const FAST_TIMEOUT_S = 30;

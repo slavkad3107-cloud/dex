@@ -104,7 +104,7 @@ its own slug. Families (key env → slugs):
 - **DeepSeek** `DEEPSEEK_API_KEY` → `deepseek`, `deepseek-reasoner`.
 - **Z.ai** `ZAI_API_KEY` → `zai-glm47`, `zai-glm45`, `zai-glm46v` (thinking disabled via `DEX_EXTRA_BODY`).
 - **Cloudflare Workers AI** `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (or token `ACCOUNT:TOKEN`) →
-  `cf-gptoss`, `cf-gptoss-20b`, `cf-llama`, `cf-kimi`.
+  `cf-gptoss`, `cf-gptoss-20b`, `cf-llama` (kimi-k2.7-code: 403 not available).
 - **OpenRouter `:free`** `OPENROUTER_API_KEY` → `or-gemma`, `or-gemma-26b`, `or-nemotron`, `or-nemotron-super`,
   `or-nemotron-lightning`, `or-dots`, `or-ling`, `or-nex` (~50 req/day shared). Free llama/
   qwen/gpt-oss/coder variants were withdrawn by OpenRouter in Sep 2026; inkling is gated to agentic apps.
